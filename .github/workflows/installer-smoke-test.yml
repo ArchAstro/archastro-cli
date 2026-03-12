@@ -37,6 +37,15 @@ jobs:
           cd "$RUNNER_TEMP/release"
           python3 -m http.server 8123 --bind 127.0.0.1 >/tmp/archastro-fixtures.log 2>&1 &
           echo $! >/tmp/archastro-fixtures.pid
+          for attempt in $(seq 1 20); do
+            if curl -fsS "http://127.0.0.1:8123/SHA256SUMS" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/archastro-fixtures.log || true
+          echo "Fixture server did not become ready" >&2
+          exit 1
 
       - name: Dry run installer
         env:
@@ -87,6 +96,15 @@ jobs:
         run: |
           $process = Start-Process python -ArgumentList "-m", "http.server", "8123", "--bind", "127.0.0.1" -WorkingDirectory "$env:RUNNER_TEMP\release" -PassThru
           $process.Id | Set-Content "$env:RUNNER_TEMP\archastro-fixtures.pid"
+          for ($attempt = 0; $attempt -lt 20; $attempt++) {
+            try {
+              Invoke-WebRequest -Uri "http://127.0.0.1:8123/SHA256SUMS" -UseBasicParsing | Out-Null
+              exit 0
+            } catch {
+              Start-Sleep -Seconds 1
+            }
+          }
+          throw "Fixture server did not become ready"
 
       - name: Dry run installer
         shell: pwsh
