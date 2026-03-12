@@ -18,19 +18,24 @@ Command forms:
 
 ## Instructions
 
-1. **Check the installed CLI version first**:
+1. **Read the compatibility contract first**:
+   - Use `plugin-compatibility.json`.
+   - For this command, prefer `plugins.agents.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
+   - Treat that resolved value as the minimum supported CLI version for every check below.
+
+2. **Check the installed CLI version first**:
    ```
    archastro --version
    ```
-   If the command is missing, or the version is older than `0.3.1`, tell the user to run `/cli:install`.
+   If the command is missing, or the version is older than the resolved minimum version, tell the user to run `/cli:install`.
 
-2. **Interpret the first argument** from `$ARGUMENTS` as the action. Supported actions are:
+3. **Interpret the first argument** from `$ARGUMENTS` as the action. Supported actions are:
    - `start`
    - `status`
    - `sync`
    - `stop`
 
-3. **Dispatch to the matching CLI command**:
+4. **Dispatch to the matching CLI command**:
    - `start`:
      ```
      archastro impersonate start <remaining-arguments>
@@ -60,6 +65,6 @@ Command forms:
      ```
      Confirm that local impersonation state was removed and drop any impersonated identity from the current session.
 
-4. **If the action is missing or unsupported**, explain the supported forms and show the command syntax.
+5. **If the action is missing or unsupported**, explain the supported forms and show the command syntax.
 
-5. **If authentication or app selection fails**, tell the user to run `/cli:auth` or provide `--app <id>`.
+6. **If authentication or app selection fails**, tell the user to run `/cli:auth` or provide `--app <id>`.

@@ -9,15 +9,20 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
 
 ## Instructions
 
-1. **Check whether the CLI is already installed**:
+1. **Read the compatibility contract first**:
+   - Use `plugin-compatibility.json`.
+   - For this command, prefer `plugins.cli.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
+   - Treat that resolved value as the minimum supported CLI version for every check below.
+
+2. **Check whether the CLI is already installed**:
    ```
    archastro --version
    ```
-   If this succeeds, record the version. The minimum supported version for the plugins in this repo is `0.3.1`.
+   If this succeeds, record the version.
 
-2. **If the CLI is present and at least `0.3.1`**, confirm the version and stop unless the user explicitly asked to upgrade.
+3. **If the CLI is present and meets the resolved minimum version**, confirm the version and stop unless the user explicitly asked to upgrade.
 
-3. **If the CLI is missing or older than `0.3.1`**, install it using the public distribution path:
+4. **If the CLI is missing or older than the resolved minimum version**, install it using the public distribution path:
    - On macOS, if Homebrew is available:
      ```
      brew install ArchAstro/tools/archastro
@@ -35,15 +40,15 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
      irm https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.ps1 | iex
      ```
 
-4. **Verify installation**:
+5. **Verify installation**:
    ```
    archastro --version
    ```
-   Confirm that the version is now `0.3.1` or newer.
+   Confirm that the version now meets the resolved minimum version.
 
-5. **On success**, tell the user the CLI is ready and suggest `/cli:auth`.
+6. **On success**, tell the user the CLI is ready and suggest `/cli:auth`.
 
-6. **On failure**, help troubleshoot the public install path:
+7. **On failure**, help troubleshoot the public install path:
    - missing `brew` is expected on Linux and some macOS setups; fall back to `install.sh`
    - `Permission denied` usually means they need `--install-dir` or a user-writable target directory
    - `command not found: archastro` after install usually means the install directory is not on `PATH`

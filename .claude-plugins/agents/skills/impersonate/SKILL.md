@@ -12,7 +12,9 @@ This skill depends on the `cli` plugin for CLI installation and authentication. 
 ## Core Workflow
 
 1. Ensure the CLI layer is ready:
-   - If the `archastro` command is missing, or the installed version is older than `0.3.1`, direct the user to `/cli:install`.
+   - Read `plugin-compatibility.json` first.
+   - Prefer `plugins.agents.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
+   - If the `archastro` command is missing, or the installed version is older than that resolved minimum version, direct the user to `/cli:install`.
    - If authentication or app selection is missing, direct the user to `/cli:auth`.
 
 2. Check the current impersonation state:

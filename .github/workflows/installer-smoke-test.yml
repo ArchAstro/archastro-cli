@@ -129,6 +129,6 @@ jobs:
         shell: pwsh
         run: |
           if (Test-Path "$env:RUNNER_TEMP\archastro-fixtures.pid") {
-            $pid = Get-Content "$env:RUNNER_TEMP\archastro-fixtures.pid"
-            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            $serverPid = Get-Content "$env:RUNNER_TEMP\archastro-fixtures.pid"
+            Stop-Process -Id $serverPid -Force -ErrorAction SilentlyContinue
           }
