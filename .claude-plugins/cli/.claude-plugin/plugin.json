@@ -1,0 +1,9 @@
+{
+  "name": "cli",
+  "description": "Install, upgrade, authenticate, and use the public ArchAstro CLI distribution from GitHub Releases or Homebrew",
+  "version": "0.2.0",
+  "author": { "name": "ArchAstro" },
+  "license": "MIT",
+  "keywords": ["archastro", "cli", "developer-platform", "releases"],
+  "commands": ["./commands"]
+}
