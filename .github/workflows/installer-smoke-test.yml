@@ -57,6 +57,7 @@ jobs:
           ARCHASTRO_INSTALL_DIR: ${{ runner.temp }}/home/.local/bin
         run: |
           mkdir -p "$HOME"
+          touch "$HOME/${{ matrix.rc_file }}"
           ./install.sh
           "$HOME/.local/bin/archastro" --version | grep '^0\.3\.1$'
           test -f "$HOME/${{ matrix.rc_file }}"

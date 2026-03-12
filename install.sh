@@ -39,7 +39,8 @@ EOF
 
 normalize_bool() {
   local value="${1:-false}"
-  case "${value,,}" in
+  value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+  case "$value" in
     1|true|yes|on) echo "true" ;;
     *) echo "false" ;;
   esac

@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 $AssetName = "archastro-windows-$ArchLabel.zip"
 $TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("archastro-fixture-" + [System.Guid]::NewGuid().ToString("N"))
 $PayloadDir = Join-Path $TempRoot "payload"
+$SourcePath = Join-Path $TempRoot "Program.cs"
 $BinaryPath = Join-Path $PayloadDir "archastro.exe"
 $ChecksumPath = Join-Path $OutputDir "SHA256SUMS"
 $ArchivePath = Join-Path $OutputDir $AssetName
@@ -52,7 +53,12 @@ public static class Program
 "@
 
 try {
-    Add-Type -TypeDefinition $Source -OutputAssembly $BinaryPath -OutputType ConsoleApplication | Out-Null
+    Set-Content -Path $SourcePath -Value $Source
+    $Csc = Get-Command csc.exe -ErrorAction SilentlyContinue
+    if (-not $Csc) {
+        throw "csc.exe is required to generate Windows fixture binaries"
+    }
+    & $Csc.Source /nologo /target:exe /out:$BinaryPath $SourcePath | Out-Null
     Compress-Archive -Path $BinaryPath -DestinationPath $ArchivePath -Force
     $Checksum = (Get-FileHash $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
     Set-Content -Path $ChecksumPath -Value "$Checksum  $AssetName"
