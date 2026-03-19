@@ -1,11 +1,11 @@
 ---
-description: Authenticate with the ArchAstro developer platform (developer or org mode)
+description: Authenticate with the ArchAstro developer platform (org mode by default)
 allowed-tools: ["Bash(archastro:*)"]
 ---
 
 # ArchAstro CLI Authentication
 
-Authenticate the user with the ArchAstro developer platform via browser-based login.
+Authenticate the user with the ArchAstro developer platform via browser-based login. Defaults to org mode (Agent Network).
 
 ## Instructions
 
@@ -28,9 +28,10 @@ Authenticate the user with the ArchAstro developer platform via browser-based lo
 
 4. **Determine the auth mode**:
 
-   Ask the user whether they want **developer mode** or **org mode**:
-   - **Developer mode**: For building and managing apps. This is the default.
-   - **Org mode**: For logging in as a user within a specific app/organization. Requires the **app slug** — the user must know this in advance.
+   The default is **org mode** (Agent Network). Only use developer mode if the user explicitly asks to log in as a developer or app builder.
+
+   - **Org mode** (default): For users within an organization. No app slug needed — defaults to Agent Network.
+   - **Developer mode**: For building and managing apps on the platform. Requires the `--dev` flag.
 
 5. **Reset any stale settings overrides** that may point to localhost:
    ```
@@ -40,14 +41,19 @@ Authenticate the user with the ArchAstro developer platform via browser-based lo
 
 6. **Start the login flow**:
 
-   **Developer mode:**
+   **Org mode (default):**
    ```
    archastro auth login
    ```
 
-   **Org mode** (the `--app` flag is a global option, not shown in `login --help`):
+   **Org mode for a specific app** (if the user specifies a different app slug):
    ```
    archastro auth login --app <app-slug>
+   ```
+
+   **Developer mode** (only if explicitly requested):
+   ```
+   archastro auth login --dev
    ```
 
    Use `run_in_background: true` so the browser-based auth flow runs while you remain responsive.
@@ -67,5 +73,5 @@ Authenticate the user with the ArchAstro developer platform via browser-based lo
 10. **On failure**, show the error and suggest:
     - Check their internet connection
     - Try `archastro settings reset` if URLs look wrong
-    - `no-access` error means the user doesn't have org access to that app — verify the slug or ask an org admin for an invite
-    - Try again with `archastro auth login` (or `--app <slug>` for org mode)
+    - `no-access` error means the user doesn't have org access — verify with an org admin for an invite
+    - Try again with `archastro auth login`
