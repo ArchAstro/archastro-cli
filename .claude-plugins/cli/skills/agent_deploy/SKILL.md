@@ -1,6 +1,6 @@
 ---
 name: agent_deploy
-description: Use when the user wants to deploy an ArchAstro agent, set up a new agent from a YAML template, or get an agent running in a thread. Trigger phrases include "deploy agent", "deploy this agent", "set up an agent", "create an agent", "get this agent running", "launch agent".
+description: Use when the user wants to deploy an ArchAstro agent, turn a config-driven agent repo into a running agent, or get an existing agent running in a thread. Trigger phrases include "deploy agent", "deploy this agent", "set up an agent", "launch agent", "ship this agent", "get this agent running".
 allowed-tools: ["Bash(archastro:*)"]
 ---
 
@@ -15,10 +15,14 @@ This skill depends on the `cli` plugin for CLI installation and authentication. 
 Every invocation must begin by understanding what already exists:
 
 ```
+archastro auth status
 archastro list agents
 ```
 
-Determine whether the user wants to deploy a new agent or work with an existing one.
+If the user is working from a local repo, also inspect whether a `configs/` directory already exists. Determine whether they want to:
+- deploy a new config-driven agent,
+- redeploy an existing template,
+- or work with an existing running agent.
 
 ## Routing
 
@@ -33,7 +37,15 @@ Before any deployment work, verify the CLI:
 
 ### User wants to deploy a new agent
 
-1. **Deploy the agent**:
+Use the config-driven golden path. Do not skip straight to `create agent`.
+
+1. **Deploy configs first**:
+   ```
+   archastro configs deploy
+   ```
+   This pushes Script and AgentTemplate configs to the server. For config-driven agents, this should happen before provisioning the agent itself.
+
+2. **Deploy the agent from the template file**:
    ```
    archastro deploy agent <yaml-file>
    ```
@@ -41,12 +53,21 @@ Before any deployment work, verify the CLI:
 
    **Important:** Always use `deploy agent`, not `create agent`. The `create agent` command only creates the agent record without provisioning routines or installations.
 
-2. **Verify the deployment**:
+3. **Verify the deployment**:
    ```
    archastro list agents
    ```
 
-3. **Offer next steps**: ask if the user wants to add the agent to a thread and start chatting. If yes, create a thread with members and hand off to the `chat` skill.
+4. **Offer next steps**: ask if the user wants to add the agent to a thread and start chatting. If yes, create a thread with members and hand off to the `chat` skill.
+
+### User needs help creating or editing the config files first
+
+Route to the `agent_authoring` skill before deploying. That skill owns:
+- `AgentTemplate` and Script config creation
+- `archastro configs sample`
+- `archastro configs script-reference`
+- routine scheduling shape
+- env-var scope guidance
 
 ### User wants to add an agent to a thread
 
@@ -75,6 +96,18 @@ archastro list agents
 ```
 
 Summarize what's deployed and offer to deploy a new one or add an existing one to a thread.
+
+## Recovery Rules
+
+- If `archastro deploy agent` fails with a validation-style error, inspect the exact CLI output first. Do not immediately fall back to lower-level provisioning commands.
+- If the problem appears to be in the config files, route to `agent_authoring`.
+- If a script-related validation error appears, use:
+  ```
+  archastro configs script-reference
+  archastro configs sample Script
+  ```
+  Do not invent script syntax from memory.
+- Prefer human-readable `config_ref` names that match deployed config lookup keys. Do not rewrite refs to raw `cfg_...` IDs unless explicitly debugging a broken environment.
 
 ## Response Rules
 
