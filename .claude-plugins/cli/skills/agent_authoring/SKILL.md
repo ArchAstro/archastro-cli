@@ -49,6 +49,10 @@ Before any authoring work, verify the CLI:
    - Script logic lives in `kind: Script` configs.
    - Agent behavior lives in an `AgentTemplate`.
    - Custom tools should use `kind: custom`, `handler_type: script`, and `config_ref` pointing at Script configs.
+   - When creating configs outside a project directory, use `-f` to read from a file:
+     ```
+     archastro create config -k AgentTemplate -f configs/agents/my-agent.yaml
+     ```
 
 3. **Validate early**:
    ```
@@ -57,14 +61,19 @@ Before any authoring work, verify the CLI:
    Run validation before deploy whenever the user changes Script or template files.
 
 4. **Deploy through the normal flow after authoring**:
-   - First:
+   - If the agent has Script configs or other supporting files, sync them first:
      ```
      archastro configs deploy
      ```
-   - Then route to the `agent_deploy` skill for:
+     This pushes local config files (Scripts, templates) but does not create agents.
+     Skip this step if the agent only has a single AgentTemplate file — `deploy agent` handles its own config upload.
+   - Then provision the agent from its template:
      ```
      archastro deploy agent <yaml-file>
      ```
+     This uploads the template config and creates the agent with its routines, tools, and installations.
+   - **Important:** `configs deploy` and `deploy agent` are different commands.
+     Use `configs deploy` to sync a directory of config files; use `deploy agent` to create an agent from a template.
 
 ## Authoring Rules
 
@@ -96,6 +105,13 @@ Before any authoring work, verify the CLI:
 - If the user asks for a brand-new Script and the language shape is unclear, run `archastro configs script-reference` before drafting.
 - If validation fails, surface the exact failing field or syntax problem. Do not immediately switch to lower-level provisioning commands.
 - If the user asks to "just create the agent" while configs are still incomplete, finish authoring and validation first, then route to `agent_deploy`.
+
+## Command Conventions
+
+- Config management uses two patterns:
+  - **Noun-first** for workflow commands: `archastro configs deploy`, `archastro configs sync`, `archastro configs validate`
+  - **Verb-first** for CRUD: `archastro list configs`, `archastro describe config <id>`, `archastro create config`
+- Do not use `archastro configs list` or `archastro configs describe` — those are not valid. Use the verb-first form.
 
 ## Response Rules
 
