@@ -110,12 +110,14 @@ Always use `--full` — the default table view truncates content.
 
 ### User needs a new thread
 
+Before creating a thread, verify the agent is set up to respond. It needs a participate routine and an `archastro/thread` installation. If the agent was deployed via `archastro deploy agent`, these are already provisioned. If not, route to `agent_deploy` to set them up first.
+
 1. Create the thread:
    ```
    archastro create thread --title "..." --user <user-id>
    ```
 
-2. Add members:
+2. Add the agent:
    ```
    archastro create threadmember --thread <thread-id> --agent-id <agent-id>
    ```
