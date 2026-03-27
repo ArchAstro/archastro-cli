@@ -85,14 +85,7 @@ Before any authoring work, verify the CLI:
 
 ### Routine configs inside templates
 
-- **Participate routines** (conversational agents that auto-respond to thread messages):
-  - `event_type: thread.session.join`
-  - `handler_type: preset`
-  - `preset_name: participate`
-  - `status: active`
-  - The agent also needs an `archastro/thread` installation for thread integration.
-  - Participate routines fire automatically when a message is sent to a thread where the agent is a member. Use `archastro create threadmessage --wait` to send a message and wait for the agent's response in the thread.
-- **Scheduled routines** need both:
+- Scheduled routines need both:
   - `schedule: "<cron>"`
   - `event_type: schedule.cron`
 - Do not put schedules under nested `event_config.schedule`.
