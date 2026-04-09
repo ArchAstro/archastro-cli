@@ -8,7 +8,7 @@ allowed-tools: ["Bash(archastro:*)"]
 
 Manage ArchAstro agent impersonation and keep the Claude Code session aligned with the active identity.
 
-This skill depends on the `cli` plugin for CLI installation and authentication. Use that plugin's commands instead of trying to install or authenticate the CLI manually inside this skill.
+This skill assumes the ArchAstro CLI is already installed and authenticated. Use the `/archastro:install` and `/archastro:auth` commands in this same plugin instead of trying to install or authenticate the CLI manually inside this skill.
 
 ## Always Start with State
 
@@ -27,9 +27,9 @@ Then route based on the combination of current state and user intent.
 Before any impersonation work, verify the CLI:
 
 - Read `plugin-compatibility.json` from the plugin root.
-- Prefer `plugins.agents.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
-- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/cli:install`.
-- If authentication or app selection is missing, direct the user to `/cli:auth`.
+- Prefer `plugins.archastro.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
+- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/archastro:install`.
+- If authentication or app selection is missing, direct the user to `/archastro:auth`.
 
 ### Inactive + user wants to start
 
@@ -136,5 +136,5 @@ After `stop`, fully drop the persona and return to your normal behavior.
 
 - Do not inspect or edit credential files directly — use the CLI only.
 - Do not ask the user to pick a subcommand — infer the action from their message and the current state.
-- If the CLI reports an auth or app error, route to `/cli:auth` or suggest `--app <id>`.
+- If the CLI reports an auth or app error, route to `/archastro:auth` or suggest `--app <id>`.
 - Keep responses concise — state the outcome, not the process.

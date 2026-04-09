@@ -11,14 +11,14 @@ Authenticate the user with the ArchAstro developer platform via browser-based lo
 
 1. **Read the compatibility contract first**:
    - Use `plugin-compatibility.json`.
-   - For this command, prefer `plugins.cli.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
+   - For this command, prefer `plugins.archastro.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
    - Treat that resolved value as the minimum supported CLI version for every check below.
 
 2. **Check the installed CLI version first**:
    ```
    archastro --version
    ```
-   If the command is missing, or the version is older than the resolved minimum version, tell the user to run `/cli:install`.
+   If the command is missing, or the version is older than the resolved minimum version, tell the user to run `/archastro:install`.
 
 3. **Check if already authenticated**:
    ```

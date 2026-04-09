@@ -8,7 +8,7 @@ allowed-tools: ["Bash(archastro:*)"]
 
 Create or update the config files for a config-driven ArchAstro agent before deployment.
 
-This skill depends on the `cli` plugin for CLI installation and authentication. Use that plugin's commands instead of trying to install or authenticate the CLI manually inside this skill.
+This skill assumes the ArchAstro CLI is already installed and authenticated. Use the `/archastro:install` and `/archastro:auth` commands in this same plugin instead of trying to install or authenticate the CLI manually inside this skill.
 
 ## Always Start with State
 
@@ -27,9 +27,9 @@ If the user is in a repo, inspect whether a `configs/` directory already exists 
 Before any authoring work, verify the CLI:
 
 - Read `plugin-compatibility.json` from the plugin root.
-- Prefer `plugins.cli.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
-- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/cli:install`.
-- If authentication or app selection is missing, direct the user to `/cli:auth`.
+- Prefer `plugins.archastro.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
+- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/archastro:install`.
+- If authentication or app selection is missing, direct the user to `/archastro:auth`.
 
 ### User wants to author or modify agent configs
 

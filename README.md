@@ -36,14 +36,13 @@ Use the PowerShell installer:
 irm https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.ps1 | iex
 ```
 
-## Claude Code Plugins
+## Claude Code Plugin
 
-Add the marketplace and install the public plugins:
+Add the marketplace and install the `archastro` plugin:
 
 ```text
 /plugin marketplace add archastro/archastro-cli
-/plugin install cli@archastro
-/plugin install agents@archastro
+/plugin install archastro@archastro
 ```
 
-The `helper` plugin remains in `ArchAstro/claude-plugins`.
+The `archastro` plugin bundles everything: CLI install/auth commands, agent authoring, deployment, chat, and impersonation. The `helper` plugin remains in `ArchAstro/claude-plugins`.
