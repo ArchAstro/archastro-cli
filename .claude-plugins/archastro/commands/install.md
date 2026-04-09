@@ -11,7 +11,7 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
 
 1. **Read the compatibility contract first**:
    - Use `plugin-compatibility.json`.
-   - For this command, prefer `plugins.cli.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
+   - For this command, prefer `plugins.archastro.minimumCliVersion` and fall back to the top-level `minimumCliVersion`.
    - Treat that resolved value as the minimum supported CLI version for every check below.
 
 2. **Check whether the CLI is already installed**:
@@ -46,7 +46,7 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
    ```
    Confirm that the version now meets the resolved minimum version.
 
-6. **On success**, tell the user the CLI is ready and suggest `/cli:auth`.
+6. **On success**, tell the user the CLI is ready and suggest `/archastro:auth`.
 
 7. **On failure**, help troubleshoot the public install path:
    - missing `brew` is expected on Linux and some macOS setups; fall back to `install.sh`

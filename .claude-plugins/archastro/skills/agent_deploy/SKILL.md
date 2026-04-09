@@ -8,7 +8,7 @@ allowed-tools: ["Bash(archastro:*)"]
 
 Deploy an agent from a YAML template and get it running in a thread.
 
-This skill depends on the `cli` plugin for CLI installation and authentication. Use that plugin's commands instead of trying to install or authenticate the CLI manually inside this skill.
+This skill assumes the ArchAstro CLI is already installed and authenticated. Use the `/archastro:install` and `/archastro:auth` commands in this same plugin instead of trying to install or authenticate the CLI manually inside this skill.
 
 ## Always Start with State
 
@@ -31,9 +31,9 @@ If the user is working from a local repo, also inspect whether a `configs/` dire
 Before any deployment work, verify the CLI:
 
 - Read `plugin-compatibility.json` from the plugin root.
-- Prefer `plugins.cli.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
-- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/cli:install`.
-- If authentication or app selection is missing, direct the user to `/cli:auth`.
+- Prefer `plugins.archastro.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
+- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/archastro:install`.
+- If authentication or app selection is missing, direct the user to `/archastro:auth`.
 
 ### User wants to deploy a new agent
 
@@ -113,5 +113,5 @@ Summarize what's deployed and offer to deploy a new one or add an existing one t
 
 - Do not inspect or edit credential files directly — use the CLI only.
 - Do not ask the user to pick a subcommand — infer the action from their message.
-- If the CLI reports an auth or app error, route to `/cli:auth` or suggest `--app <id>`.
+- If the CLI reports an auth or app error, route to `/archastro:auth` or suggest `--app <id>`.
 - Keep responses concise — state the outcome, not the process.
