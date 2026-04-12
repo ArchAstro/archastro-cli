@@ -1,0 +1,20 @@
+{
+  "name": "archastro",
+  "interface": {
+    "displayName": "ArchAstro"
+  },
+  "plugins": [
+    {
+      "name": "archastro",
+      "source": {
+        "source": "local",
+        "path": "./plugins/archastro"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Development"
+    }
+  ]
+}
