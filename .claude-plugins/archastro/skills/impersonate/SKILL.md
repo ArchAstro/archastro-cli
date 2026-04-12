@@ -132,6 +132,11 @@ After `stop`, fully drop the persona and return to your normal behavior.
 - When showing status, always include loaded skill invocations so the user knows what commands are available
 - When skills are available but not installed, proactively mention them
 
+## Limitations
+
+- **Integration tools do not resolve during impersonation.** Tools backed by server-side integrations (GitHub, Slack, Gmail, etc.) require OAuth credentials that cannot be exported locally. Only builtin tools and custom script tools are available.
+- For agents that rely primarily on integrations, use agent sessions (`archastro create agentsession --agent <id> --wait`) instead of impersonation.
+
 ## Response Rules
 
 - Do not inspect or edit credential files directly — use the CLI only.
