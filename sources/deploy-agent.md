@@ -1,11 +1,11 @@
 ---
 targets:
-  claude-skill: agent_deploy
-  codex-skill: agent_deploy
+  claude-skill: deploy-agent
+  codex-skill: deploy-agent
 skill:
-  name: agent_deploy
+  name: deploy-agent
   description: Use when the user wants to deploy an ArchAstro agent, turn a config-driven agent repo into a running agent, or get an existing agent running in a thread. Trigger phrases include "deploy agent", "deploy this agent", "set up an agent", "launch agent", "ship this agent", "get this agent running".
-  allowed-tools: ['Bash(archastro:*)']
+  allowed-tools: ["Bash(archastro:*)"]
 ---
 
 
@@ -40,13 +40,17 @@ Before any deployment work, verify the CLI:
 - Run `archastro --version`. If missing or older than the resolved minimum, {{INSTALL_ROUTE}}.
 - If authentication or app selection is missing, {{AUTH_ROUTE}}.
 
+### Local config directory not initialized
+
+If the user has config files but no `configs/` directory set up, route to the `manage-configs` skill first. That skill owns local config management.
+
 ### User wants to deploy a new agent
 
 Use the config-driven golden path. Do not skip straight to `create agent`.
 
 1. **Deploy configs first**:
    ```
-   archastro configs deploy
+   archastro deploy configs
    ```
    This pushes Script and AgentTemplate configs to the server. For config-driven agents, this should happen before provisioning the agent itself.
 
@@ -67,10 +71,10 @@ Use the config-driven golden path. Do not skip straight to `create agent`.
 
 ### User needs help creating or editing the config files first
 
-Route to the `agent_authoring` skill before deploying. That skill owns:
+Route to the `author-agent` skill before deploying. That skill owns:
 - `AgentTemplate` and Script config creation
-- `archastro configs sample`
-- `archastro configs script-reference`
+- `archastro describe configsample`
+- `archastro describe scriptdocs`
 - routine scheduling shape
 - env-var scope guidance
 
@@ -105,11 +109,11 @@ Summarize what's deployed and offer to deploy a new one or add an existing one t
 ## Recovery Rules
 
 - If `archastro deploy agent` fails with a validation-style error, inspect the exact CLI output first. Do not immediately fall back to lower-level provisioning commands.
-- If the problem appears to be in the config files, route to `agent_authoring`.
+- If the problem appears to be in the config files, route to `author-agent`.
 - If a script-related validation error appears, use:
   ```
-  archastro configs script-reference
-  archastro configs sample Script
+  archastro describe scriptdocs
+  archastro describe configsample Script
   ```
   Do not invent script syntax from memory.
 - Prefer human-readable `config_ref` names that match deployed config lookup keys. Do not rewrite refs to raw `cfg_...` IDs unless explicitly debugging a broken environment.

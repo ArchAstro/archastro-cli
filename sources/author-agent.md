@@ -1,14 +1,19 @@
 ---
-name: agent_authoring
-description: Use when the user wants to create or edit an ArchAstro agent's config files before deployment, including AgentTemplate files, Script configs, custom tools, routines, and environment setup. Trigger phrases include "build this agent", "write the template", "create the scripts", "set up the routines", "author this agent config".
-allowed-tools: ["Bash(archastro:*)"]
+targets:
+  claude-skill: author-agent
+  codex-skill: author-agent
+skill:
+  name: author-agent
+  description: Use when the user wants to create or edit an ArchAstro agent's config files before deployment, including AgentTemplate files, Script configs, custom tools, routines, and environment setup. Trigger phrases include "build this agent", "write the template", "create the scripts", "set up the routines", "author this agent config".
+  allowed-tools: ["Bash(archastro:*)"]
 ---
+
 
 # ArchAstro Agent Authoring
 
 Create or update the config files for a config-driven ArchAstro agent before deployment.
 
-This skill assumes the ArchAstro CLI is already installed and authenticated. Use the `/archastro:install` and `/archastro:auth` commands in this same plugin instead of trying to install or authenticate the CLI manually inside this skill.
+This skill assumes the ArchAstro CLI is already installed and authenticated. {{ASSUME_INSTALLED}}
 
 ## Always Start with State
 
@@ -28,22 +33,26 @@ Before any authoring work, verify the CLI:
 
 - Read `plugin-compatibility.json` from the plugin root.
 - Prefer `plugins.archastro.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
-- Run `archastro --version`. If missing or older than the resolved minimum, direct the user to `/archastro:install`.
-- If authentication or app selection is missing, direct the user to `/archastro:auth`.
+- Run `archastro --version`. If missing or older than the resolved minimum, {{INSTALL_ROUTE}}.
+- If authentication or app selection is missing, {{AUTH_ROUTE}}.
+
+### Local config directory not initialized
+
+If the user doesn't have a `configs/` directory set up yet, route to the `manage-configs` skill first. That skill owns `archastro init --enable-configs`, local file layout, and the sync/deploy workflow.
 
 ### User wants to author or modify agent configs
 
 1. **Start from CLI-backed templates, not memory**:
    - For new config objects, use:
      ```
-     archastro configs sample <Kind>
+     archastro describe configsample <Kind>
      ```
    - For Script configs, always use:
      ```
-     archastro configs script-reference
-     archastro configs sample Script
+     archastro describe scriptdocs
+     archastro describe configsample Script
      ```
-     The script reference is the live source of truth. Do not invent or paraphrase the language from memory.
+     The script docs are the live source of truth. Do not invent or paraphrase the language from memory.
 
 2. **Use the standard config-driven model**:
    - Script logic lives in `kind: Script` configs.
@@ -56,14 +65,14 @@ Before any authoring work, verify the CLI:
 
 3. **Validate early**:
    ```
-   archastro configs validate
+   archastro validate config -k <Kind> -f <path>
    ```
    Run validation before deploy whenever the user changes Script or template files.
 
 4. **Deploy through the normal flow after authoring**:
    - If the agent has Script configs or other supporting files, sync them first:
      ```
-     archastro configs deploy
+     archastro deploy configs
      ```
      This pushes local config files (Scripts, templates) but does not create agents.
      Skip this step if the agent only has a single AgentTemplate file — `deploy agent` handles its own config upload.
@@ -72,15 +81,16 @@ Before any authoring work, verify the CLI:
      archastro deploy agent <yaml-file>
      ```
      This uploads the template config and creates the agent with its routines, tools, and installations.
-   - **Important:** `configs deploy` and `deploy agent` are different commands.
-     Use `configs deploy` to sync a directory of config files; use `deploy agent` to create an agent from a template.
+   - **Important:** `deploy configs` and `deploy agent` are different commands.
+     Use `deploy configs` to sync a directory of config files; use `deploy agent` to create an agent from a template.
 
 ## Authoring Rules
 
 ### Script configs
 
+- **Load the `build-script` skill for detailed script authoring guidance**, including syntax examples, common mistakes, and the validation/test/deploy workflow.
 - Treat the script language as a functional expression language, not a general-purpose imperative language.
-- Use `archastro configs script-reference` for exact syntax and available namespaces.
+- Use `archastro describe scriptdocs` for exact syntax and available namespaces.
 - If a script fails validation, prefer rewriting toward the sample/reference instead of trial-and-error improvisation.
 
 ### Routine configs inside templates
@@ -89,6 +99,12 @@ Before any authoring work, verify the CLI:
   - `schedule: "<cron>"`
   - `event_type: schedule.cron`
 - Do not put schedules under nested `event_config.schedule`.
+- To discover valid event types and their payload schemas:
+  ```
+  archastro list events
+  archastro describe event <event-name>
+  ```
+  The payload schema from `describe event` shows what `$` contains in the routine's script handler.
 
 ### Config references
 
@@ -102,16 +118,14 @@ Before any authoring work, verify the CLI:
 
 ## Recovery Rules
 
-- If the user asks for a brand-new Script and the language shape is unclear, run `archastro configs script-reference` before drafting.
+- If the user asks for a brand-new Script and the language shape is unclear, run `archastro describe scriptdocs` before drafting.
 - If validation fails, surface the exact failing field or syntax problem. Do not immediately switch to lower-level provisioning commands.
-- If the user asks to "just create the agent" while configs are still incomplete, finish authoring and validation first, then route to `agent_deploy`.
+- If the user asks to "just create the agent" while configs are still incomplete, finish authoring and validation first, then route to `deploy-agent`.
 
 ## Command Conventions
 
-- Config management uses two patterns:
-  - **Noun-first** for workflow commands: `archastro configs deploy`, `archastro configs sync`, `archastro configs validate`
-  - **Verb-first** for CRUD: `archastro list configs`, `archastro describe config <id>`, `archastro create config`
-- Do not use `archastro configs list` or `archastro configs describe` — those are not valid. Use the verb-first form.
+- All config commands are **verb-first**: `archastro list configs`, `archastro create config`, `archastro deploy configs`, `archastro sync configs`, `archastro validate config`, etc.
+- There is no `archastro configs` namespace. Do not use `archastro configs <verb>` — always put the verb first.
 
 ## Response Rules
 
