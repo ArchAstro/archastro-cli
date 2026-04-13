@@ -8,24 +8,15 @@ skill:
   description: Use when the user wants to impersonate an ArchAstro agent, asks about the active impersonation state, wants to refresh or stop impersonation, or refers to working as a specific ArchAstro agent inside {{HARNESS_NAME}}. Trigger phrases include "impersonate agent", "act as this agent", "be this agent", "start impersonation", "sync impersonation", "stop impersonation", "what agent am I impersonating", and "use the active agent identity".
   allowed-tools: ["Bash(archastro:*)"]
 command:
-  description: Start, inspect, refresh, or stop ArchAstro impersonation through the ArchAstro CLI
+  description: Run an archastro impersonate CLI command directly
   allowed-tools: ["Bash(archastro:*)"]
 ---
 
-# ArchAstro Impersonation
+{{#SKILL}}# ArchAstro Impersonation
 
-{{#SKILL}}Manage ArchAstro impersonation through the ArchAstro CLI and keep the {{SESSION}} aligned with the active identity file.
+Manage ArchAstro impersonation through the ArchAstro CLI and keep the {{SESSION}} aligned with the active identity file.
 
-This skill assumes the ArchAstro CLI is already installed and authenticated. {{ASSUME_INSTALLED}}{{/SKILL}}{{#CLAUDE_COMMAND}}Manage ArchAstro impersonation from Claude Code and keep the current session aligned with the active identity file.
-
-Command aliases:
-
-```text
-/archastro:impersonate start <agent-id-or-flags>
-/archastro:impersonate status
-/archastro:impersonate sync
-/archastro:impersonate stop
-```{{/CLAUDE_COMMAND}}
+This skill assumes the ArchAstro CLI is already installed and authenticated. {{ASSUME_INSTALLED}}
 
 ## Always Start with State
 
@@ -172,4 +163,27 @@ After `stop`, fully drop the persona and return to your normal behavior.
 - Do not inspect or edit credential files directly — use the CLI only.
 - Do not ask the user to pick a subcommand — infer the action from their message and the current state.
 - If the CLI reports an auth or app error, {{AUTH_ROUTE_SHORT}} or suggest `--app <id>`.
-- Keep responses concise — state the outcome, not the process.
+- Keep responses concise — state the outcome, not the process.{{/SKILL}}{{#CLAUDE_COMMAND}}# ArchAstro Agent Impersonation (CLI passthrough)
+
+Pass arguments directly to `archastro impersonate`.
+
+```text
+/archastro:impersonate start <agent-id>
+/archastro:impersonate status
+/archastro:impersonate sync
+/archastro:impersonate stop
+/archastro:impersonate list skills
+/archastro:impersonate install skill <id> [--harness codex] [--install-scope project]
+```
+
+## Instructions
+
+1. Read `plugin-compatibility.json`. Prefer `plugins.archastro.minimumCliVersion`, fall back to the top-level `minimumCliVersion`.
+2. Run `archastro --version`. If missing or too old, tell the user to run `/archastro:install`.
+3. Run:
+   ```
+   archastro impersonate $ARGUMENTS
+   ```
+4. If the command was `start` or `sync`, also run `archastro impersonate status --json`, read the `identity_file`, and adopt the identity for the current session.
+5. If the command was `stop`, drop any impersonated identity from the current session.
+6. If auth or app selection fails, direct the user to `/archastro:auth` or `--app <id>`.{{/CLAUDE_COMMAND}}
