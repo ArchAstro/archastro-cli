@@ -10,6 +10,21 @@ Send messages to agents and view their responses.
 
 This skill assumes the ArchAstro CLI is already installed and authenticated. Use the `/archastro:install` and `/archastro:auth` commands in this same plugin instead of trying to install or authenticate the CLI manually inside this skill.
 
+## Quick Reference
+
+| Task | Command |
+|------|---------|
+| Ask agent a question | `archastro create agentsession --agent <id> --instructions "..." --wait` |
+| Create a thread | `archastro create thread --title "..." --owner-type agent --owner-id <agent-id> --json` |
+| Create a test user | `archastro create user --system-user --name "..." --json` |
+| Add member to thread | `archastro create threadmember --thread <id> --user-id <id> --json` |
+| Add agent to thread | `archastro create threadmember --thread <id> --agent-id <id> --json` |
+| Send message (wait for reply) | `archastro create threadmessage --thread <id> --user-id <id> -c "..." --wait --json` |
+| View conversation | `archastro list threadmessages --thread <id> --full` |
+| List agent sessions | `archastro list agentsessions --agent <id> --json` |
+
+Use `--help` on any command for full options.
+
 ## Always Start with State
 
 Every invocation must begin by understanding the current context. Determine:
@@ -81,14 +96,7 @@ Use `describe --follow` to stream updates on a session created without `--wait`.
 
 ### User wants to send a thread message
 
-1. **Determine the sender ID**:
-
-   **Org mode**: Get the user's ID from `archastro auth status`.
-
-   **Developer mode**: Look up thread members:
-   ```
-   archastro list threadmembers --thread <thread-id>
-   ```
+1. **Determine the sender ID**: Get the user's ID from `archastro auth status`.
 
 2. **Send the message and wait for the response**:
    ```
@@ -110,14 +118,39 @@ Always use `--full` — the default table view truncates content.
 
 ### User needs a new thread
 
-1. Create the thread:
+**Agent-owned thread** (recommended when an agent should participate):
+
+1. Create the thread owned by the agent:
    ```
-   archastro create thread --title "..." --user <user-id>
+   archastro create thread --title "..." --owner-type agent --owner-id <agent-id> --json
    ```
 
-2. Add members:
+2. Create a test user (if needed) and add them to the thread:
    ```
-   archastro create threadmember --thread <thread-id> --agent-id <agent-id>
+   archastro create user --system-user --name "Test User" --json
+   archastro create threadmember --thread <thread-id> --user-id <user-id> --json
+   ```
+
+3. Send a message and wait for the agent to respond:
+   ```
+   archastro create threadmessage --thread <thread-id> --user-id <user-id> -c "Hello" --wait --json
+   ```
+
+4. View the conversation:
+   ```
+   archastro list threadmessages --thread <thread-id> --full
+   ```
+
+**User-owned thread** (when a user starts the conversation):
+
+1. Create the thread:
+   ```
+   archastro create thread --title "..." --user <user-id> --json
+   ```
+
+2. Add the agent:
+   ```
+   archastro create threadmember --thread <thread-id> --agent-id <agent-id> --json
    ```
 
 ## Response Rules
