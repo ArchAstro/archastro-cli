@@ -10,7 +10,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 is required by check_version_bump_on_content_change,
+      # which diffs against origin/<base>. A shallow clone (depth=1) does
+      # not create the remote tracking branch for origin/main on PR events.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
@@ -19,6 +24,12 @@ jobs:
 
       - name: Install dependencies
         run: pip install pyyaml==6.0.2
+
+      - name: Run repo-validation unit tests
+        run: python3 scripts/test_check_plugin_repo.py
+
+      - name: Run repo-validation checks
+        run: python3 scripts/check_plugin_repo.py
 
       - name: Verify generated plugin content is in sync with sources/
         run: python3 scripts/generate-plugin-content.py --check
