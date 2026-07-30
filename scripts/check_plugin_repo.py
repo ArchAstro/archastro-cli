@@ -33,6 +33,7 @@ ERROR CONTRACT
 CHECKS
     Implemented: check_manifest_consistency, check_compat_key_refs,
                  check_slash_command_refs, check_hardcoded_versions,
+                 check_legacy_repository_refs,
                  check_version_bump_on_content_change
 """
 from __future__ import annotations
@@ -68,6 +69,20 @@ CONTENT_ROOTS: list[Path] = [
     REPO_ROOT / ".claude-plugins" / "archastro" / "commands",
     REPO_ROOT / "plugins" / "archastro" / "skills",
 ]
+
+PUBLIC_REPOSITORY_REFERENCE_FILES: tuple[Path, ...] = (
+    REPO_ROOT / "README.md",
+    REPO_ROOT / "install.sh",
+    REPO_ROOT / "install.ps1",
+    REPO_ROOT / "sources" / "install.md",
+    REPO_ROOT / ".claude-plugins" / "archastro" / "commands" / "install.md",
+    REPO_ROOT / "plugins" / "archastro" / "skills" / "install" / "SKILL.md",
+    REPO_ROOT / "plugins" / "archastro" / ".codex-plugin" / "plugin.json",
+)
+
+LEGACY_REPOSITORY_SLUG = "ArchAstro/archastro-cli"
+LEGACY_REPOSITORY_NAME = "archastro-cli"
+CANONICAL_REPOSITORY_SLUG = "ArchAstro/archastro"
 
 
 def _rel(p: Path) -> str:
@@ -125,6 +140,27 @@ def _load_json_dict(path: Path) -> tuple[dict | None, str | None]:
     if not isinstance(data, dict):
         return None, f"{_rel(path)}: top-level JSON is not an object"
     return data, None
+
+
+def check_legacy_repository_refs(
+    files: Iterable[Path] = PUBLIC_REPOSITORY_REFERENCE_FILES,
+) -> list[str]:
+    """Reject public links that still use the repository's pre-rename slug."""
+    errors: list[str] = []
+    for path in files:
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as exc:
+            errors.append(f"{_rel(path)}: cannot read ({exc})")
+            continue
+        for lineno, line in enumerate(lines, start=1):
+            if LEGACY_REPOSITORY_NAME in line.lower():
+                errors.append(
+                    f"{_rel(path)}:{lineno}: references renamed repository "
+                    f"`{LEGACY_REPOSITORY_SLUG}`; use "
+                    f"`{CANONICAL_REPOSITORY_SLUG}`"
+                )
+    return errors
 
 
 def check_manifest_consistency(
@@ -586,6 +622,7 @@ def check_version_bump_on_content_change(
 # manifest's version against the PR base).
 CHECKS: list[tuple[str, Callable[[], list[str]]]] = [
     ("manifest consistency", check_manifest_consistency),
+    ("canonical repository refs", check_legacy_repository_refs),
     ("compat key refs", check_compat_key_refs),
     ("slash command refs", check_slash_command_refs),
     ("hardcoded versions", check_hardcoded_versions),

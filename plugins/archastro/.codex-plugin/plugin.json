@@ -1,14 +1,14 @@
 {
   "name": "archastro",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Author, deploy, manage, chat with, and impersonate ArchAstro agents from Codex through the ArchAstro CLI.",
   "author": {
     "name": "ArchAstro",
     "email": "dev@archastro.com",
     "url": "https://github.com/ArchAstro"
   },
-  "homepage": "https://github.com/ArchAstro/archastro-cli",
-  "repository": "https://github.com/ArchAstro/archastro-cli",
+  "homepage": "https://github.com/ArchAstro/archastro",
+  "repository": "https://github.com/ArchAstro/archastro",
   "license": "MIT",
   "keywords": [
     "archastro",
@@ -31,7 +31,7 @@
       "Write",
       "Shell"
     ],
-    "websiteURL": "https://github.com/ArchAstro/archastro-cli",
+    "websiteURL": "https://github.com/ArchAstro/archastro",
     "defaultPrompt": [
       "Author a config-driven ArchAstro agent.",
       "Set up local configs for this repo.",

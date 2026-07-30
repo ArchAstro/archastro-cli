@@ -3,7 +3,7 @@
 set -euo pipefail
 
 OWNER="ArchAstro"
-REPO="archastro-cli"
+REPO="archastro"
 BINARY_NAME="archastro"
 DEFAULT_VERSION="latest"
 INSTALL_DIR="${ARCHASTRO_INSTALL_DIR:-}"

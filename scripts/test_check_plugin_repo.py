@@ -231,6 +231,55 @@ class ManifestConsistencyTest(unittest.TestCase):
         self.assertTrue(any("codex-plugin.json" in e for e in errors))
 
 
+class LegacyRepositoryRefsTest(unittest.TestCase):
+    """Tests for check_legacy_repository_refs()."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def test_canonical_repository_urls_pass(self):
+        path = self.tmp / "README.md"
+        path.write_text("https://github.com/ArchAstro/archastro\n")
+        self.assertEqual(
+            check_plugin_repo.check_legacy_repository_refs(files=[path]),
+            [],
+        )
+
+    def test_default_file_set_covers_both_installers(self):
+        self.assertIn(
+            check_plugin_repo.REPO_ROOT / "install.sh",
+            check_plugin_repo.PUBLIC_REPOSITORY_REFERENCE_FILES,
+        )
+        self.assertIn(
+            check_plugin_repo.REPO_ROOT / "install.ps1",
+            check_plugin_repo.PUBLIC_REPOSITORY_REFERENCE_FILES,
+        )
+
+    def test_renamed_repository_url_fails_with_line_number(self):
+        path = self.tmp / "README.md"
+        path.write_text(
+            "# Install\n"
+            "https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh\n"
+        )
+        errors = check_plugin_repo.check_legacy_repository_refs(files=[path])
+        self.assertEqual(len(errors), 1)
+        self.assertIn(f"{path}:2:", errors[0])
+        self.assertIn("ArchAstro/archastro-cli", errors[0])
+        self.assertIn("ArchAstro/archastro", errors[0])
+
+    def test_separate_repository_variable_fails(self):
+        path = self.tmp / "install.ps1"
+        path.write_text('$Owner = "ArchAstro"\n$Repo = "archastro-cli"\n')
+        errors = check_plugin_repo.check_legacy_repository_refs(files=[path])
+        self.assertEqual(len(errors), 1)
+        self.assertIn(f"{path}:2:", errors[0])
+        self.assertIn("archastro-cli", errors[0])
+
+
 class CompatKeyRefsTest(unittest.TestCase):
     """Tests for check_compat_key_refs()."""
 
@@ -1155,7 +1204,7 @@ class MainRunnerTest(unittest.TestCase):
     # Real CHECKS registry sanity ----------------------------------------
 
     def test_real_checks_registry_has_expected_entries(self):
-        # The real CHECKS list should contain all 5 checks in the expected
+        # The real CHECKS list should contain all 6 checks in the expected
         # order. This guards against accidental removal or reordering that
         # would break invariants documented in the comment above CHECKS.
         names = [name for name, _ in self._original_checks]
@@ -1163,6 +1212,7 @@ class MainRunnerTest(unittest.TestCase):
             names,
             [
                 "manifest consistency",
+                "canonical repository refs",
                 "compat key refs",
                 "slash command refs",
                 "hardcoded versions",

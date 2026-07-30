@@ -33,11 +33,11 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
      ```
    - On Linux or macOS without Homebrew:
      ```
-     curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh | bash
+     curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro/main/install.sh | bash
      ```
    - On Windows PowerShell:
      ```powershell
-     irm https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.ps1 | iex
+     irm https://raw.githubusercontent.com/ArchAstro/archastro/main/install.ps1 | iex
      ```
 
 5. **Verify installation**:
