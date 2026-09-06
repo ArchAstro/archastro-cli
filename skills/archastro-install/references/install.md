@@ -47,4 +47,6 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
    - `command not found: archastro` after install usually means the install directory is not on `PATH`.
    - Release download failures usually mean the target release asset has not been published yet.
 
+If the installed binary is outside this process's `PATH`, use its absolute path or add its directory to the current session's `PATH`, then repeat the version check. Installer shell configuration changes do not update an already-running parent process.
+
 7. **On success**, tell the user the CLI is ready and suggest they run `archastro auth login` to authenticate.

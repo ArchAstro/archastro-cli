@@ -48,17 +48,17 @@ If the user has config files but no `configs/` directory set up, route to the `m
 
 Use the config-driven golden path. Do not skip straight to `create agent`.
 
-1. **Deploy configs first**:
+1. **Deploy supporting configs when needed**:
    ```
    archastro deploy configs
    ```
-   This pushes Script and AgentTemplate configs to the server. For config-driven agents, this should happen before provisioning the agent itself.
+   Run this only when the template references local scripts, skills, workflows, schemas, or other supporting configs. A self-contained AgentTemplate can go directly to `deploy agent`. Remove unused sample references rather than deploying unrelated dependencies.
 
 2. **Deploy the agent from the template file**:
    ```
    archastro deploy agent <yaml-file>
    ```
-   This creates the full agent stack in one step: app config, agent record, routines, and installations. Note the agent ID (`agi_...`) from the output.
+   This creates the full agent stack in one step: app config, agent record, routines, and installations. Record the agent ID returned in the output.
 
    **Important:** Always use `deploy agent`, not `create agent`. The `create agent` command only creates the agent record without provisioning routines or installations.
 
@@ -68,6 +68,40 @@ Use the config-driven golden path. Do not skip straight to `create agent`.
    ```
 
 4. **Offer next steps**: ask if the user wants to add the agent to a thread and start chatting. If yes, create a thread with members and hand off to the `chat` skill.
+
+### Existing templates and redeployment
+
+`archastro deploy agent --template <config-id-or-lookup-key>` provisions from an existing server template without uploading a file. Keep the template config lookup key distinct from the agent lookup key (`agent_key` in YAML or `--agent-key`).
+
+Do not assume deployment updates an existing agent in place. Inspect the existing agent before repeating a deploy. `--recreate` deletes the matching agent and its threads, routines, and installations before creating another; use it only when that deletion is explicitly intended. Updating config files with `deploy configs` alone does not reprovision an existing agent.
+
+### User wants to upgrade an existing agent
+
+For an agent tracked to a Solution AgentTemplate, use `upgrade agent` to apply template changes to the existing agent. Uploading a newer config version alone does not apply that version to the running agent. Inspect its current state, then preview:
+
+```
+archastro describe agent <agent-id> --json
+archastro upgrade agent <agent-id> --dry-run --json
+```
+
+The preview reports additions, updates, removals, and unchanged resources. Inspect its template and Solution identities and the proposed changes. To select a replacement Solution AgentTemplate, add `--template <config-id-or-lookup-key>` to both preview and apply. This is not a general command for replacing an arbitrary untracked agent; report unsupported-template errors rather than falling back to deletion.
+
+Apply the same reviewed inputs, passing the actual `review_fingerprint` returned by the preview:
+
+```
+archastro upgrade agent <agent-id> --review-fingerprint <review-fingerprint> --json
+archastro describe agent <agent-id> --json
+```
+
+If the fingerprint is stale, fetch a fresh preview and review it again. Verify the same agent ID and the returned upgrade result after applying. `upgrade` updates the existing agent's template-managed resources; `deploy agent --recreate` deletes and replaces the agent and is a separate destructive operation.
+
+### User wants to export an existing agent
+
+```
+archastro export agent <agent-id> --dir ./agent-export
+```
+
+This writes `agents/<agent-key>.json` plus dependent configs at their virtual paths. Use a fresh output directory to avoid overwriting local edits. Without `--dir`, `--json` returns the template and dependent-config envelope instead. Export captures authoring configuration, not a backup of thread history or runtime state. Inspect the emitted files and dependency references before incorporating them into a managed config directory. Deploy supporting configs first if provisioning a new agent from that exported template; do not treat an export/redeploy as an in-place upgrade.
 
 ### User needs help creating or editing the config files first
 
@@ -87,12 +121,12 @@ Route to the `author-agent` skill before deploying. That skill owns:
 
 2. **Add the agent as a member**:
    ```
-   archastro create threadmember --thread <thread-id> --agent-id <agent-id>
+   archastro create threadmember --thread <thread-id> --agent <agent-id>
    ```
 
 3. **Add any other participants**:
    ```
-   archastro create threadmember --thread <thread-id> --user-id <user-id>
+   archastro create threadmember --thread <thread-id> --user <user-id>
    ```
 
 4. **Confirm** the thread is ready and offer to send the first message.

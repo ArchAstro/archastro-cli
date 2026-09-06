@@ -109,11 +109,17 @@ Walk through the authoring flow step by step.
    archastro describe skillfile <slug> SKILL.md
    ```
 
-7. **Link the skill to an agent**: Skills are linked to agents via the agent's tools configuration. The agent needs a `get_skill` tool or the skill needs to be included in the agent's skill list. If the user has an agent they want to link:
+7. **Link the skill and enable runtime access**. Publishing a skill alone does not attach it to an agent. Both an AgentSkill link and the builtin `skills` tool are required:
    ```
-   archastro list agents
+   archastro describe skill <slug> --output json
+   archastro list agentskills --agent <agent-id>
+   archastro list agenttools --agent <agent-id>
+   archastro create agentskill --agent <agent-id> --config <root-config-id>
+   archastro create agenttool --agent <agent-id> --kind builtin --builtin-tool-key skills
    ```
-   Then update the agent's config to reference the skill.
+   Read `rootConfigId` from the described skill. Reuse existing links and builtin tools instead of duplicating them. The builtin tool exposes `get_skill` at runtime. For deploy-managed agents, declare the skill in the AgentTemplate's `skills` block and include its builtin skills tool; obtain the exact schema with `archastro describe configsample AgentTemplate`.
+
+8. **Verify runtime use**. Check `list agentskills` and `list agenttools`, then use the chat skill to exercise a request that should load the skill and inspect the conversation/tool result. File publication and linking alone do not prove the agent can use the package.
 
 ### User wants to edit an existing skill
 
@@ -138,19 +144,23 @@ Walk through the authoring flow step by step.
    archastro describe skillfile <slug> SKILL.md
    ```
 
-### User wants to install a skill into their local coding harness
+### Platform skills versus public coding-agent skills
 
-Skills can be installed locally for use in Claude Code, Codex, or OpenCode:
+The commands above publish platform skill files and AgentSkill links. Public skills installed with `npx skills` are local coding-agent instruction packages; `archastro setup` installs the public ArchAstro CLI guidance. Publishing a platform skill does not publish a Git repository or install it into a local coding agent.
+
+### User wants to install a platform skill into their local coding harness
+
+Linked platform skills can be installed locally for Claude Code, Codex, Cursor, or Rovo Dev. Starting an embed also installs linked skills; select the intended harness and scope:
 
 ```
-archastro impersonate start <agent-id>
-archastro impersonate list skills
-archastro impersonate install skill <skill-config-id> --harness claude
-archastro impersonate install skill <skill-config-id> --harness codex --install-scope project
-archastro impersonate install skill <skill-config-id> --harness opencode
+archastro embed start <agent-id> --harness codex --install-scope project
+archastro embed list skills
+archastro embed install skill <skill-config-id> --harness claude
+archastro embed install skill <skill-config-id> --harness codex --install-scope project
+archastro embed install skill <skill-config-id> --harness cursor
 ```
 
-After installation, the skill appears in the local `.claude/skills/`, `.codex/skills/`, or `.opencode/skills/` directory.
+Use `--install-scope project` for repository-local installation or `user` for the user profile (the default). Follow the CLI-reported destination; public `npx skills` installation and embed installation are separate flows.
 
 ## Skill Authoring Best Practices
 

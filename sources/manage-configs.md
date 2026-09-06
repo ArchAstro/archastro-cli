@@ -73,6 +73,12 @@ Before any config work, verify the CLI:
 
 3. **Offer next steps**: Ask if the user wants to create a new config (`archastro describe configsample <Kind>`) or sync existing configs from the server.
 
+### App context and owner-pinned directories
+
+Inspect the project config to discover configured directories instead of assuming `configs/`. For noninteractive setup, use `archastro init --app-id <app-id> --enable-configs --no-samples`; `--app-id current` keeps app selection portable.
+
+Each directory has one owner. `--config-dir <path>` follows the signed-in identity; explicit `--config-dir configs/org=org=<org-id>` pins an organization. Supported owners are system, org, user, team, and agent. Use `archastro create configdir --help` to add another directory. Sync and deploy resolve scope per directory, preventing one owner's config set from being treated as another's.
+
 ### User wants to pull configs from the server
 
 Sync server configs to local files:
@@ -80,14 +86,16 @@ Sync server configs to local files:
 archastro sync configs
 ```
 
-This downloads all configs for the current app — including skills, scripts, and workflows — and writes them as local files in the correct directories. The manifest tracks the file-to-config mapping.
+This downloads configs visible to each configured directory's resolved owner — including skills, scripts, and workflows — and writes them as local files in the correct directories. The manifest tracks the file-to-config mapping.
+
+Use `sync configs --dry-run` before reviewing incoming changes. Conflicts default to failure; select `--on-conflict overwrite|skip|fail` deliberately. `--prune-local` deletes tracked local files removed remotely.
 
 After syncing, the directory structure reflects server state:
 ```
 configs/
 ├── agents/                     # AgentTemplate configs (.yaml)
 ├── skills/my-skill/            # Skill bundles (SKILL.md + supporting files)
-├── scripts/                    # Script configs (.agentscript)
+├── scripts/                    # Script configs (.aascript)
 ├── workflows/                  # Workflow configs (.json)
 └── ...                         # Other config kinds
 ```
@@ -118,9 +126,9 @@ archastro list configkinds
 archastro describe configsample <Kind> --to-file ./configs/<category>/<name>.yaml
 ```
 
-You can also use the browser editor:
+You can also use the browser editor. Its path is relative to the configured config directory (or use an absolute path), not the project root:
 ```
-archastro edit config ./configs/<category>/<name>.yaml
+archastro edit config <category>/<name>.yaml
 ```
 
 ### User wants to validate local configs
@@ -142,6 +150,10 @@ Push all local config changes to the server:
 archastro deploy configs
 ```
 
+Deployment considers all configured directories, not only the customer currently being discussed. Before a customer-scoped change, preview the complete diff and verify every pending owner. If unrelated customer edits would also deploy, use a separate project/config registration containing only the intended owner and its required dependencies; do not assume `--app` or changing working subdirectories filters owner directories. Do not use `--take-ownership` to make a scope conflict disappear.
+
+Use `deploy configs --dry-run` to preview, or `--validate-only` to validate against the target server without uploading. `--prune` archives remotely tracked configs removed locally; ordinary deploy does not prune.
+
 This:
 - Compares local files against the manifest
 - Uploads new and changed configs in dependency order
@@ -153,8 +165,8 @@ This:
 
 | Directory | Convention |
 |-----------|-----------|
-| `skills/<slug>/` | All files become `File` kind. `SKILL.md` is the root — name and description are extracted from its YAML frontmatter. Other files (`.liquid`, `.yaml`, `.js`, etc.) become supporting skill files. |
-| `scripts/` | Only `.agentscript` files and `.yaml`/`.json` with `kind: Script` are allowed. Other file types are rejected. |
+| `skills/<slug>/` | `SKILL.md` becomes a `Skill` config; supporting files become `File` configs. The root metadata comes from YAML frontmatter. |
+| `scripts/` | `.aascript` / `.agentscript` files become `Script`; `.test.aascript` / `.test.agentscript` become `ScriptTest`. YAML/JSON wrappers must declare `kind: Script` or `kind: ScriptTest`. Other file types are rejected. |
 | `workflows/` | Only `.json` files and `.yaml` with a `Workflow*` kind are allowed. Other file types are rejected. |
 
 Files outside these directories use standard kind inference from file extension or YAML content.
@@ -220,9 +232,10 @@ archastro deploy configs
 
 ### Quick edit via browser
 ```
-archastro edit config ./configs/agents/my-agent.yaml
+archastro edit config agents/my-agent.yaml
 # Opens in browser with live validation
-# Changes are saved to the server and synced back to the local file
+# Changes are saved locally; deploy afterward to update the server
+archastro deploy configs
 ```
 
 ## Response Rules

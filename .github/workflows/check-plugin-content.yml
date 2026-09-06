@@ -34,5 +34,14 @@ jobs:
       - name: Verify generated plugin content is in sync with sources/
         run: python3 scripts/generate-plugin-content.py --check
 
+      - name: Verify skill examples against the minimum supported CLI
+        env:
+          ARCHASTRO_INSTALL_SKIP_PATH_UPDATE: "true"
+          ARCHASTRO_INSTALL_SKIP_COMPLETIONS: "true"
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("plugin-compatibility.json"))["minimumCliVersion"])')
+          bash install.sh --version "$version" --install-dir "$RUNNER_TEMP/skill-cli"
+          ARCHASTRO_CLI="$RUNNER_TEMP/skill-cli/archastro" python3 scripts/test_skill_commands.py
+
       - name: Verify portable skills through the real npx installer
         run: python3 scripts/test_portable_skills.py

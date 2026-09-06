@@ -17,9 +17,9 @@ This skill assumes the ArchAstro CLI is already installed and authenticated. Ins
 | Ask agent a question | `archastro create agentsession --agent <id> --instructions "..." --wait` |
 | Create a thread | `archastro create thread --title "..." --owner-type agent --owner-id <agent-id> --json` |
 | Create a test user | `archastro create user --system-user --name "..." --json` |
-| Add member to thread | `archastro create threadmember --thread <id> --user-id <id> --json` |
-| Add agent to thread | `archastro create threadmember --thread <id> --agent-id <id> --json` |
-| Send message (wait for reply) | `archastro create threadmessage --thread <id> --user-id <id> -c "..." --wait --json` |
+| Add member to thread | `archastro create threadmember --thread <id> --user <id> --json` |
+| Add agent to thread | `archastro create threadmember --thread <id> --agent <id> --json` |
+| Send message (wait for reply) | `archastro create threadmessage --thread <id> --user <id> -c "..." --wait --json` |
 | View conversation | `archastro list threadmessages --thread <id> --full` |
 | List agent sessions | `archastro list agentsessions --agent <id> --json` |
 
@@ -46,14 +46,16 @@ The agent processes the instructions as its task. `--wait` streams updates until
 
 **Multi-turn conversation** — create session, send messages with `exec --wait`:
 ```
-archastro create agentsession --agent <agent-id> --thread-id <thread-id> --instructions "Respond to messages"
+archastro create agentsession --agent <agent-id> --thread <thread-id> --idle
 archastro exec agentsession <session-id> -m "What are the open issues?" --wait
 ```
 `exec --wait` blocks and streams the agent's response in real-time. Without `--wait`, exec returns immediately after sending.
 
 ### Threads (for multi-participant conversations)
 
-Threads support multiple users and agents. Use when you need ongoing conversation context or multiple participants.
+Threads support multiple users and agents. Use when you need ongoing conversation context or multiple participants. Agent membership alone does not start a reply: the agent needs a configured message-handling routine. If `--wait` times out, inspect the agent and its routines rather than posting the same message repeatedly.
+
+`list threadmessages` returns the newest page first (25 messages by default). Use `--page` / `--limit` for older history; `--full` expands content but does not fetch every page. `create thread` also supports `--member-user` and `--member-agent` to add participants atomically.
 
 ## Routing
 
@@ -96,11 +98,11 @@ Use `describe --follow` to stream updates on a session created without `--wait`.
 
 ### User wants to send a thread message
 
-1. **Determine the sender ID**: Get the user's ID from `archastro auth status`.
+1. **Determine the sender identity**: Reuse the authenticated app user when available. A developer-account User ID from `auth status` is not necessarily a user in the target app. Use `archastro list users --help` and select an existing app user, or create a system user only when a test participant is needed.
 
 2. **Send the message and wait for the response**:
    ```
-   archastro create threadmessage --thread <thread-id> --user-id <user-id> --content "..." \
+   archastro create threadmessage --thread <thread-id> --user <user-id> --content "..." \
      --wait --wait-timeout 300
    ```
 
@@ -128,12 +130,12 @@ Always use `--full` — the default table view truncates content.
 2. Create a test user (if needed) and add them to the thread:
    ```
    archastro create user --system-user --name "Test User" --json
-   archastro create threadmember --thread <thread-id> --user-id <user-id> --json
+   archastro create threadmember --thread <thread-id> --user <user-id> --json
    ```
 
 3. Send a message and wait for the agent to respond:
    ```
-   archastro create threadmessage --thread <thread-id> --user-id <user-id> -c "Hello" --wait --json
+   archastro create threadmessage --thread <thread-id> --user <user-id> -c "Hello" --wait --json
    ```
 
 4. View the conversation:
@@ -150,7 +152,7 @@ Always use `--full` — the default table view truncates content.
 
 2. Add the agent:
    ```
-   archastro create threadmember --thread <thread-id> --agent-id <agent-id> --json
+   archastro create threadmember --thread <thread-id> --agent <agent-id> --json
    ```
 
 ## Response Rules
