@@ -1,6 +1,8 @@
-# ArchAstro Impersonation
+# ArchAstro Agent Embed
 
-Manage ArchAstro impersonation through the ArchAstro CLI and keep the current coding-agent session aligned with the active identity file.
+The current CLI command is `archastro embed`; `impersonate` is the legacy skill name and is not a CLI command.
+
+Manage ArchAstro agent embedding through the ArchAstro CLI and keep the current coding-agent session aligned with the active identity file.
 
 First complete [bootstrap](bootstrap.md), then resume this task.
 
@@ -9,7 +11,7 @@ First complete [bootstrap](bootstrap.md), then resume this task.
 Every invocation must begin by checking the current impersonation state. Do not ask the user what action to take — determine it from state and intent.
 
 ```
-archastro impersonate status --json
+archastro embed status --json
 ```
 
 Then route based on the combination of current state and user intent.
@@ -27,21 +29,21 @@ Before any impersonation work, verify the CLI:
 ### Inactive + user wants to start
 
 ```
-archastro impersonate start <agent-or-flags>
+archastro embed start <agent-id-or-lookup-key> --harness codex --install-scope project
 ```
 
 Then:
 
 ```
-archastro impersonate status --json
+archastro embed status --json
 ```
 
-Read the `identity_file` path from the returned state. Open and read that file. Adopt the identity for the current current coding-agent session while retaining your normal capabilities.
+Read `state.identity_file` from the returned JSON (`active`, `path`, and `state`). Open and read that file. Adopt the identity for the current current coding-agent session while retaining your normal capabilities.
 
-After adoption, check `state.skills`. If the agent has linked skills, tell the user what's available and offer to install them:
+`embed start` automatically installs linked skills for detected harnesses by default. Choose the actual current harness and intended scope explicitly (the example above uses Codex/project); supported harnesses are `claude`, `codex`, `cursor`, and `rovo`, with user scope the default. After adoption, inspect `state.skills`, `state.loaded_skills`, and returned warnings to report what installed successfully:
 
 ```
-archastro impersonate list skills --json
+archastro embed list skills --json
 ```
 
 ### Active + user asks about status (or no specific intent)
@@ -59,21 +61,21 @@ If the identity file has not been read in this session yet, read it and adopt th
 ### Active + user wants to sync/refresh
 
 ```
-archastro impersonate sync
+archastro embed sync
 ```
 
 Then:
 
 ```
-archastro impersonate status --json
+archastro embed status --json
 ```
 
-Re-read the `identity_file` and re-adopt the refreshed identity. Report what changed (new/removed tools or skills).
+Re-read `state.identity_file` and re-adopt the refreshed identity. Report what changed (new/removed tools or skills).
 
 ### Active + user wants to stop
 
 ```
-archastro impersonate stop
+archastro embed stop
 ```
 
 Drop the impersonated identity from the current session. Confirm that local state was removed.
@@ -83,13 +85,13 @@ Drop the impersonated identity from the current session. Confirm that local stat
 List the impersonated agent's tools:
 
 ```
-archastro impersonate list tools --json
+archastro embed list tools --json
 ```
 
 To execute a tool directly:
 
 ```
-archastro impersonate run tool <tool-name> --input '<json>' --json
+archastro embed run tool <tool-name> --input '<json>' --json
 ```
 
 ### Active + user asks about skills
@@ -97,7 +99,7 @@ archastro impersonate run tool <tool-name> --input '<json>' --json
 List available skills:
 
 ```
-archastro impersonate list skills --json
+archastro embed list skills --json
 ```
 
 Show what's available vs what's already installed (from `state.loaded_skills`).
@@ -105,15 +107,15 @@ Show what's available vs what's already installed (from `state.loaded_skills`).
 To install a skill:
 
 ```
-archastro impersonate install skill <skill-id-or-slug>
+archastro embed install skill <skill-id-or-slug>
 ```
 
 After install, report the invocation command (e.g., `/<skill-name>`) so the user knows how to use it.
 
-For Codex or OpenCode targets:
+For Codex:
 
 ```
-archastro impersonate install skill <id> --harness codex --install-scope project
+archastro embed install skill <id> --harness codex --install-scope project
 ```
 
 ### Inactive + user asks about status

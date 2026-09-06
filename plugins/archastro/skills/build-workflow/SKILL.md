@@ -39,17 +39,6 @@ Before any workflow work, verify the CLI:
 - Run `archastro --version`. If missing or older than the resolved minimum, instruct the user to install or upgrade `archastro`.
 - If authentication or app selection is missing, instruct the user to run `archastro auth login`.
 
-### Workflow commands not exposed in the current `archastro` build
-
-The source tree has dedicated top-level workflow commands, but some `archastro` builds may not expose them yet. Verify first:
-
-```
-archastro list workflows
-archastro describe workflowdocs
-```
-
-If those commands are unavailable, do not keep insisting on them. Fall back to the config-managed workflow path and explain that the dedicated workflow resource exists in source but is not wired into the current binary.
-
 ### User wants to create a new workflow
 
 **Phase 1: Gather requirements**
@@ -76,7 +65,7 @@ This returns the JSON schema and a sample payload. The payload fields are access
 
 **Phase 2: Scaffold the workflow**
 
-Use the top-level workflow commands, not `describe configsample`/`validate config`, for the normal authoring loop when the current `archastro` build exposes them.
+Use the top-level workflow commands, not `describe configsample`/`validate config`, for the normal authoring loop.
 
 Create a workflow from a local JSON file:
 ```
@@ -92,42 +81,14 @@ archastro create workflow --id my-workflow
 
 A workflow is a `WorkflowGraph` JSON config under the hood, but the user-facing authoring path should go through the top-level workflow commands.
 
-A minimal workflow graph looks more like:
-```json
-{
-  "kind": "WorkflowGraph",
-  "version": 1,
-  "name": "My Workflow",
-  "start_node": "trigger_1",
-  "nodes": [
-    {
-      "kind": "WorkflowTrigger",
-      "id": "trigger_1",
-      "trigger": "workflow.scheduled",
-      "on_success": "script_1"
-    },
-    {
-      "kind": "WorkflowScript",
-      "id": "script_1",
-      "script": "default-script"
-    }
-  ],
-  "data": [
-    {
-      "kind": "Script",
-      "id": "default-script",
-      "script": "true"
-    }
-  ]
-}
-```
+Start with the graph returned by `create workflow --id my-workflow` when no file is supplied, inspect it with `describe workflow my-workflow --output json`, and edit its graph locally. This creates a persisted scaffold; use `update workflow` for subsequent changes rather than creating it again. Keep the graph schema, node kinds, edges, and embedded data references aligned with the live reference.
 
 Use the live workflow docs when the graph shape is unclear:
 ```
 archastro describe workflowdocs
 ```
 
-If `workflowdocs` is not available in the current binary, say so explicitly and fall back to the config-managed path instead of pretending the command exists.
+If a command is missing, verify the CLI version and upgrade through the installation route before continuing.
 
 ### Available node types
 
@@ -157,49 +118,64 @@ Fix any validation errors before deploying.
 
 **Phase 6: Deploy**
 
-Creating or updating the workflow through the top-level workflow commands persists it directly:
+The scaffold already exists from Phase 2. Persist the validated changes with an update:
 ```
-archastro create workflow --id my-workflow --file ./workflows/my-workflow.json
 archastro update workflow my-workflow --file ./workflows/my-workflow.json
 ```
 
-If the top-level workflow commands are unavailable in the current binary, or if the user is working inside a broader config-managed repo and explicitly wants that flow, route to `manage-configs` instead. Do not claim the dedicated workflow commands are available unless you verified them in the running CLI.
+For a config-managed repository, use the `manage-configs` deploy flow instead of creating duplicate standalone resources.
 
 **Phase 7: Attach to a routine**
 
-Workflows run via agent routines. Create or update a routine to use the workflow:
+Workflows can run directly or through agent routines and automations. For an agent routine, get `configId` from `archastro describe workflow <id> --output json`, then create or update the routine to use it:
 
 For a **scheduled** routine (cron):
 ```
 archastro create agentroutine --agent <agent-id> \
   --name "Daily report" \
   --event-type schedule.cron \
-  --schedule "0 9 * * 1-5" \
+  --schedule "0 9 * * *" \
   --handler-type workflow_graph \
-  --config-id <workflow-config-id>
+  --config <workflow-config-id>
 ```
 
-For a **webhook-triggered** routine:
+For a **webhook-triggered** routine, discover its real event name with `list events` and `describe event`. Generic webhook events use the `webhook.external` envelope; provider integrations have their own event families. Select the actual event and scope its filters before creating the routine:
 ```
 archastro create agentroutine --agent <agent-id> \
   --name "Inbound webhook handler" \
-  --event-type webhook.inbound \
+  --event-type <discovered-webhook-event> \
   --handler-type workflow_graph \
-  --config-id <workflow-config-id>
+  --config <workflow-config-id>
 ```
 
 To update an existing routine to use a workflow:
 ```
 archastro update agentroutine <routine-id> \
   --handler-type workflow_graph \
-  --config-id <workflow-config-id>
+  --config <workflow-config-id>
 ```
 
-**Phase 8: Test and monitor**
+**Phase 8: Test, activate, and monitor**
 
-Check routine runs:
+Execute a graph with representative input before attaching live triggers:
+
+```
+archastro run workflow --file ./workflows/my-workflow.json --payload '{"example":true}'
+```
+
+This executes on the platform and can perform real side effects. Use test inputs and explicit test integrations. A direct workflow run verifies graph behavior; it does not prove the routine's event binding.
+
+Routine creation defaults to draft. When the user intends the schedule or event handler to go live:
+
+```
+archastro activate agentroutine <routine-id>
+```
+
+Then exercise the intended event or schedule and inspect the resulting run:
 ```
 archastro list agentroutineruns --routine <routine-id>
+archastro describe agentroutinerun <run-id>
+archastro describe agentroutinerun <run-id> --journal
 ```
 
 Use `println()` in scripts for debugging output.
@@ -230,9 +206,9 @@ archastro create script --id daily-check --file ./scripts/daily-check.agentscrip
 archastro create agentroutine --agent <agent-id> \
   --name "Daily check" \
   --event-type schedule.cron \
-  --schedule "0 9 * * 1-5" \
+  --schedule "0 9 * * *" \
   --handler-type script \
-  --config-id <script-config-id>
+  --config <script-config-id>
 ```
 Get the config ID from `archastro describe script daily-check --output json` (the `configId` field).
 
@@ -241,7 +217,7 @@ Get the config ID from `archastro describe script daily-check --output json` (th
 archastro create agentroutine --agent <agent-id> \
   --name "Daily check" \
   --event-type schedule.cron \
-  --schedule "0 9 * * 1-5" \
+  --schedule "0 9 * * *" \
   --handler-type script \
   --script 'println("hello")'
 ```
@@ -251,12 +227,77 @@ Or include the routine in the AgentTemplate:
 routines:
   - name: daily-check
     event_type: schedule.cron
-    schedule: "0 9 * * 1-5"
+    schedule: "0 9 * * *"
     handler_type: script
     config_ref: daily-check-script
 ```
 
+Confirm the requested time and timezone before choosing cron. These routine/automation cron commands do not expose a timezone flag; do not assume the coding agent's local timezone applies or confuse them with separate agent schedules that may carry timezone state. Verify the actual scheduled timestamp/run against the requested wall-clock time, including daylight-saving requirements.
+
 **Important**: Scheduled routines need both `schedule` and `event_type: schedule.cron`. Do not put schedules under nested `event_config.schedule`.
+
+## Other routine handlers and event selection
+
+Use `archastro create agentroutine --help` for the supported handler contract. A routine can run a script, workflow graph, built-in preset, or linear chain. Presets include `do_task`, `send_message`, `participate`, `triage`, and `auto_memory_capture`; choose a preset when the task needs agent reasoning and tools. `--preset-instructions`, model selection, and session settings configure the supported preset.
+
+A chain (`--handler-type chain --steps '<JSON>'`) combines named script, workflow, and stateless `do_task`/`send_message` steps. Read the CLI's full step schema before authoring: runtime step references use `config`, while portable templates resolve config refs. Chain scripts and workflows receive `{trigger, inputs}`; read `$.trigger` for the original event and `$.inputs.<step_name>` for upstream output.
+
+For event-driven work, use `--event-filter` to scope events, `--event-dedupe-key-path` for event identity, and `--event-cue` for text matching when supported. Use either convenience flags or `--event-config` JSON, never both. Inspect `describe event` before selecting fields; do not assume all events share a payload shape.
+
+## Automations: run workflows without an agent routine
+
+Choose an automation when a workflow itself is the scheduled, event-triggered, or explicitly invoked unit. First validate the graph, persist it, and get its `configId` with `describe workflow`. Then create the matching automation:
+
+```
+archastro create automation --name "Daily report" --type scheduled --schedule "0 9 * * *" --config <workflow-config-id>
+archastro create automation --name "Event handler" --type trigger --trigger <discovered-event-name> --config <workflow-config-id>
+archastro create automation --name "On-demand report" --type invoked --invoke-auth user --config <workflow-config-id>
+```
+
+These are alternatives, not three required resources. Choose execution identity deliberately with `--run-as-user` or `--run-as-agent` when needed; they are mutually exclusive. For reusable declarative definitions, inspect `describe configsample AutomationTemplate` and use `create automation --template <template-id-or-key>`. Invoked automations can validate payloads with `--input-schema-config` and lock input/participant values with `--prefills`; inspect their help before configuring them.
+
+Inspect the created resource and activate when it should run. To switch to another workflow config, update the reference, then verify the next execution:
+
+```
+archastro describe automation <automation-id>
+archastro update automation <automation-id> --config <workflow-config-id>
+archastro activate automation <automation-id>
+archastro invoke automation <invoked-automation-id> --payload '{"example":true}' --wait
+archastro list automationruns --automation <automation-id>
+archastro describe automationrun <run-id>
+archastro describe automationrun <run-id> --journal
+```
+
+`invoke automation` is for the invoked type. For scheduled or triggered automations, exercise their actual schedule/event and inspect the resulting run. `--idempotency-key` can deduplicate an invocation; `--participants` supplies named agent participants required by the graph. Runs execute real work. Confirm terminal status and the intended output, not only acceptance. To stop future activation:
+
+```
+archastro pause automation <automation-id>
+```
+
+## Generic inbound webhooks and delivery proof
+
+A webhook resource configures inbound delivery and signature verification; it is distinct from an integration provider or an automation. For generic delivery use a lookup key; for provider-specific delivery use `--provider github` or `--provider slack`. `--provider` and `--lookup-key` are mutually exclusive, and both modes require a signing secret.
+
+```
+archastro create webhook --lookup-key <webhook-key> --signing-secret <signing-secret>
+archastro describe webhook <webhook-id>
+archastro list webhookevents --webhook <webhook-id>
+```
+
+Use the returned/configured endpoint with the sender and its documented signing protocol. Keep the secret out of committed files and reports. Add `--provision-context-source` only when a webhook/inbound context source is needed. Delivery alone does not create a workflow trigger: discover the actual event envelope with `list events`/`describe event`, attach the routine or automation to that event, and verify both the recorded webhook event and the resulting run. Do not substitute an OAuth provider credential for the webhook signing secret.
+
+## Preset discovery and schedule observability
+
+Before choosing a routine preset, run `archastro list agentroutinepresets` for its allowed events, uniqueness, session, and chain constraints. Then use `create agentroutine --help` for its configuration fields.
+
+For a scheduled routine, inspect `describe agentroutine` for the cron and status, then look for its actual `agentroutineruns`. Agent schedule resources are a separate surface; when the agent uses them, inspect their state directly:
+
+```
+archastro list agentschedules --agent <agent-id>
+archastro describe agentschedule <schedule-id> --agent <agent-id>
+```
+
+For a scheduled automation, inspect `describe automation` and `list automationruns --automation <id>`. A visible cron or active status is configuration evidence, not proof that an execution completed.
 
 ## Workflow Design Best Practices
 
@@ -281,3 +322,21 @@ routines:
 - Keep responses concise and operational.
 - When authoring workflows, show the user a concrete JSON graph draft they can review.
 - Prefer showing the full workflow structure over explaining node types abstractly.
+
+### Rotate a webhook automation's signing secret
+
+Team-owned webhook Automations have their own signing secret, separate from a
+provider/generic `webhooks` record. Inspect the automation and command contract:
+
+```sh
+archastro describe automation <automation-id> --json
+archastro refresh automation-webhook-secret --help
+```
+
+This command requires organization authentication for the owning team. Use the intended org session, and preserve unrelated profile settings.
+
+For a requested rotation, run `archastro refresh automation-webhook-secret <automation-id>`.
+Treat the returned signing material as a secret, update the authorized sender's
+configuration, and verify a signed delivery produces the intended automation run.
+Do not rotate merely to diagnose an unrelated run failure; replacing a provider
+webhook record does not rotate this automation-specific secret.

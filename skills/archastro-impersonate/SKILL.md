@@ -1,9 +1,9 @@
 ---
 name: archastro-impersonate
-description: Use when the user wants to impersonate an ArchAstro agent, asks about the active impersonation state, wants to refresh or stop impersonation, or refers to working as a specific ArchAstro agent inside your coding agent. Trigger phrases include "impersonate agent", "act as this agent", "be this agent", "start impersonation", "sync impersonation", "stop impersonation", "what agent am I impersonating", and "use the active agent identity".
+description: Use when the user wants to impersonate an ArchAstro agent, asks about the active impersonation state, wants to refresh or stop impersonation, or refers to working as a specific ArchAstro agent inside your coding agent. Trigger phrases include "embed agent", "start embed", "sync embed", "stop embed", "which agent is embedded", "impersonate agent", "act as this agent", "be this agent", "start impersonation", "sync impersonation", "stop impersonation", "what agent am I impersonating", and "use the active agent identity".
 ---
 
-# ArchAstro Impersonation
+# ArchAstro Agent Embed
 
 1. Read and execute [bootstrap](references/bootstrap.md) before running task commands. If the CLI is missing or too old, install or upgrade it yourself and resume the requested task.
 2. Read the [task guide](references/task.md) and complete the user's request. An explicit upgrade request runs the upgrade steps even when a supported version is present; an install request keeps an already supported version.

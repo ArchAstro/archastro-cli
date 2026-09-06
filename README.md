@@ -17,7 +17,7 @@ brew install ArchAstro/tools/archastro
 Fallback to the installer script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro/main/install.sh | bash
 ```
 
 ### Linux
@@ -25,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/instal
 Use the installer script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro/main/install.sh | bash
 ```
 
 ### Windows
@@ -33,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/instal
 Use the PowerShell installer:
 
 ```powershell
-irm https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/ArchAstro/archastro/main/install.ps1 | iex
 ```
 
 ## Agent skills (npx skills)
@@ -56,6 +56,12 @@ The `/skills` source selects the portable catalog. The bare repository also cont
 
 The skill installer copies instructions; it does not install the ArchAstro binary. When an agent uses a skill, it checks `archastro --version`, installs or upgrades the CLI if necessary, verifies it, and resumes the requested task. Platform work starts browser authentication when needed. Install-only requests do not require login.
 
+The collection covers 16 task areas, including agent/config authoring, deployment,
+integrations, knowledge, Solutions, runtime operations, task execution, and developer
+app/customer administration. See [the core coverage audit](SKILL_COVERAGE.md) for
+resource ownership and verification boundaries. Current skills require CLI 0.61.0
+or newer; bootstrap upgrades older installations.
+
 ### Skill organization
 
 Each `archastro-<task>` skill has a short entrypoint and detailed references loaded on demand. Task descriptions handle discovery; references hold longer authoring guides. Every installable directory includes its own bootstrap, compatibility contract, and linked task guides, so a skill never depends on another installed skill or a plugin command.
@@ -66,6 +72,7 @@ Canonical content lives in `sources/`; `scripts/generate-plugin-content.py` gene
 python3 scripts/generate-plugin-content.py
 python3 scripts/generate-plugin-content.py --check
 python3 scripts/test_portable_skills.py
+ARCHASTRO_CLI=/path/to/archastro python3 scripts/test_skill_commands.py
 ```
 
 ## Claude Code Plugin
@@ -73,7 +80,7 @@ python3 scripts/test_portable_skills.py
 Add the marketplace and install the `archastro` plugin:
 
 ```text
-/plugin marketplace add archastro/archastro-cli
+/plugin marketplace add ArchAstro/archastro
 /plugin install archastro@archastro
 ```
 

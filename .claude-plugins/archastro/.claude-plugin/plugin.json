@@ -1,7 +1,7 @@
 {
   "name": "archastro",
   "description": "The complete ArchAstro developer plugin: install and authenticate the public ArchAstro CLI, then author agents, build scripts and workflows, manage configs, deploy agents, chat with running agents, and impersonate agents from Claude Code.",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "author": { "name": "ArchAstro" },
   "license": "MIT",
   "keywords": [

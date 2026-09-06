@@ -96,7 +96,7 @@ let arr = import("array")
 let response = http.get(env.API_URL + "/orders/" + $.order_id, {
   headers: { "Authorization": "Bearer " + env.API_TOKEN }
 })
-let body = unwrap(response)
+let body = unwrap(response).body
 
 {
   order_id: $.order_id,
@@ -109,12 +109,12 @@ let body = unwrap(response)
 
 Available namespaces:
 - `requests` — HTTP client (`get`, `post`, `put`, `patch`, `delete`)
-- `array` — Collection operations (`map`, `filter`, `reduce`, `find`, `sort`, `flat_map`)
-- `string` — String operations (`split`, `join`, `trim`, `lowercase`, `uppercase`, `contains`)
+- `array` — Collection operations (`map`, `filter`, `reduce`, `find`, `flat`)
+- `string` — String operations (`split`, `trim`, `lowercase`, `uppercase`, `includes`)
 - `map` — Object operations (`keys`, `values`, `merge`, `get`)
 - `datetime` — Date/time operations (`now`, `format`, `parse`, `add`)
 - `math` — Math operations (`round`, `floor`, `ceil`, `abs`)
-- `result` — Result type operations (`ok`, `err`, `is_ok`, `is_err`)
+- `result` — Result type operations (`ok`, `err`, `isOk`, `isErr`)
 - `email` — Email sending
 - `jwt` — JWT token operations
 - `slack` — Slack API operations
@@ -135,7 +135,7 @@ Fix any validation errors before proceeding.
 
 **Phase 5: Test**
 
-Run the script locally with test input:
+Execute the local source on the platform with test input (this is not an offline sandbox; external calls and writes are real):
 ```
 archastro run script --file ./scripts/my-script.agentscript --input '{"order_id": "ORD-123"}'
 ```
@@ -167,7 +167,7 @@ Place `.agentscript` files in `configs/scripts/` and deploy:
 archastro deploy configs
 ```
 
-The `scripts/` directory enforces that only `.agentscript` files and `.yaml`/`.json` with `kind: Script` are allowed — other file types are rejected. See the [manage-configs guide](manage-configs.md) for setting up the configs directory.
+Production sources can use `.aascript` or `.agentscript`. Test sources use `.test.aascript` or `.test.agentscript` and deploy as `ScriptTest`; structured YAML/JSON wrappers use the matching config kind. See the [manage-configs guide](manage-configs.md) for setting up the configs directory.
 
 **Phase 7: Wire it up**
 
@@ -175,14 +175,14 @@ Connect the script to where it will be used:
 
 **As a custom tool on an agent:**
 
-The API requires `--config-id` pointing at the script's config ID even for script-handler tools:
+The API requires `--config` pointing at the script's config ID even for script-handler tools:
 ```
 archastro create agenttool --agent <agent-id> \
   --kind custom \
   --name "lookup_order" \
   --description "Look up an order by ID" \
   --handler-type script \
-  --config-id <script-config-id> \
+  --config <script-config-id> \
   --instruction "Use this tool when the user asks to look up an order." \
   --parameters '{"type":"object","properties":{"order_id":{"type":"string"}},"required":["order_id"]}'
 ```
@@ -198,7 +198,7 @@ archastro create agentroutine --agent <agent-id> \
   --event-type schedule.cron \
   --schedule "0 9 * * 1-5" \
   --handler-type script \
-  --config-id <script-config-id>
+  --config <script-config-id>
 ```
 
 Get the script's config ID from `archastro describe script <id> --output json` (the `configId` field).
@@ -213,7 +213,31 @@ archastro create agentroutine --agent <agent-id> \
   --script 'println("hello")'
 ```
 
-Prefer `--config-id` for production — it keeps the routine linked to a versioned script resource that can be updated independently.
+Prefer `--config` for production — it keeps the routine linked to a versioned script resource that can be updated independently.
+
+### Repeatable script tests and execution context
+
+Use ScriptTest for assertions, not only successful execution:
+
+```
+archastro test script --file configs/scripts/order-lookup.test.aascript
+archastro test script order-lookup-tests
+archastro test scripts
+```
+
+Read `archastro test script --help` and `archastro describe scriptdocs` before authoring. The `test` namespace provides `describe`, `it`, `expect`, hooks, `mock`, `spy`, and `withInput`. Mock side-effecting namespace calls explicitly: tests do not automatically isolate network or storage. Inside a configs project, `test script --file` overlays local script imports before deployed sources. Import shared script modules with `import("script:<lookup_key>")`.
+
+Consult the live reference for optional type annotations, `input` declarations, structured logging, and storage. For custom tools, `$` contains tool arguments; `threads.current()` accesses the calling thread when available. Single-handler routines receive the event at `$`. Chain steps receive `{trigger, inputs}`, so use `$.trigger.<field>` and `$.inputs.<step_name>`.
+
+For deployed routines, activate when ready and verify an actual run:
+
+```
+archastro activate agentroutine <routine-id>
+archastro list agentroutineruns --routine <routine-id>
+archastro describe agentroutinerun <run-id>
+```
+
+Routine creation defaults to draft. Creating its script does not activate it.
 
 ### User wants to edit an existing script
 
@@ -231,14 +255,7 @@ Prefer `--config-id` for production — it keeps the routine linked to a version
 
 ## Common Mistakes
 
-**Do not write JSON — use script object syntax:**
-```
-// WRONG — JSON syntax causes "unexpected token :" errors
-{ "status": "ok", "count": 5 }
-
-// CORRECT — script uses unquoted keys
-{ status: "ok", count: 5 }
-```
+**Object keys may be unquoted identifiers or quoted strings.** Both `{ status: "ok" }` and `{ "status": "ok" }` are valid.
 
 **Do not use `return` — the last expression is the return value:**
 ```
@@ -249,15 +266,7 @@ return { status: "ok" }
 { status: "ok" }
 ```
 
-**Always import namespaces before using them:**
-```
-// WRONG — "Unknown identifier" error
-let now = datetime.now()
-
-// CORRECT
-let dt = import("datetime")
-let now = dt.now()
-```
+**Built-in namespaces support direct calls**, such as `array.map(...)` and `string.uppercase(...)`. Import bindings are also supported; use `import("requests")` for HTTP and consult the live reference for app-specific namespaces.
 
 **No imperative loops — use array functions:**
 ```

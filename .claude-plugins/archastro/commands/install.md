@@ -33,11 +33,11 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
      ```
    - On Linux or macOS without Homebrew:
      ```
-     curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh | bash
+     curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro/main/install.sh | bash
      ```
    - On Windows PowerShell:
      ```powershell
-     irm https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.ps1 | iex
+     irm https://raw.githubusercontent.com/ArchAstro/archastro/main/install.ps1 | iex
      ```
 
 5. **Verify installation**:
@@ -51,5 +51,7 @@ Install or upgrade the public `archastro` binary from Homebrew or GitHub Release
    - `Permission denied` usually means they need `--install-dir` or a user-writable target directory.
    - `command not found: archastro` after install usually means the install directory is not on `PATH`.
    - Release download failures usually mean the target release asset has not been published yet.
+
+If the installed binary is outside this process's `PATH`, use its absolute path or add its directory to the current session's `PATH`, then repeat the version check. Installer shell configuration changes do not update an already-running parent process.
 
 7. **On success**, tell the user the CLI is ready and suggest `/archastro:auth`.
