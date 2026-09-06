@@ -1,6 +1,6 @@
 {
   "name": "archastro",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Author, deploy, manage, chat with, and impersonate ArchAstro agents from Codex through the ArchAstro CLI.",
   "author": {
     "name": "ArchAstro",

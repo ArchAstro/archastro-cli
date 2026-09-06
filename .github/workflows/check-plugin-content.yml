@@ -33,3 +33,6 @@ jobs:
 
       - name: Verify generated plugin content is in sync with sources/
         run: python3 scripts/generate-plugin-content.py --check
+
+      - name: Verify portable skills through the real npx installer
+        run: python3 scripts/test_portable_skills.py
