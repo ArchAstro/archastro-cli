@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Generate Claude Code and Codex plugin content from canonical sources in sources/.
+Generate portable skills plus Claude Code and Codex plugins from sources/.
+
+Every skill source also produces skills/archastro-<name>/ with a short entrypoint,
+a task reference, and bundled bootstrap instructions and compatibility contract.
+Edit sources/, not generated skill directories.
 
 One source file per concept in sources/<name>.md. Each source declares its
 output targets (claude-skill, claude-command, codex-skill) via the `targets:`
@@ -90,12 +94,20 @@ CODEX_PLUGIN_ROOT = REPO_ROOT / "plugins" / "archastro"
 
 
 TargetType = Literal["claude-skill", "claude-command", "codex-skill"]
-Harness = Literal["claude", "codex"]
+Harness = Literal["claude", "codex", "portable"]
 
 
 # Per-harness substitution maps. Keys are placeholders that appear in source
 # bodies and frontmatter; values are the harness-specific rendered string.
 SUBSTITUTIONS: dict[Harness, dict[str, str]] = {
+    "portable": {
+        "{{HARNESS_NAME}}": "your coding agent",
+        "{{SESSION}}": "current coding-agent session",
+        "{{ASSUME_INSTALLED}}": "First complete [bootstrap](bootstrap.md), then resume this task.",
+        "{{INSTALL_ROUTE}}": "execute [installation](install.md), verify the version, then resume this task",
+        "{{AUTH_ROUTE}}": "run `archastro auth login` and resume after browser authentication completes",
+        "{{AUTH_ROUTE_SHORT}}": "run `archastro auth login`",
+    },
     "claude": {
         "{{HARNESS_NAME}}": "Claude Code",
         "{{SESSION}}": "Claude Code session",
@@ -127,10 +139,11 @@ SUBSTITUTIONS: dict[Harness, dict[str, str]] = {
 #   - claude-skill  → {"SKILL", "CLAUDE_SKILL"}
 #   - codex-skill   → {"SKILL", "CODEX_SKILL"}
 #   - claude-command → {"CLAUDE_COMMAND"}
-CONDITIONAL_SETS: dict[TargetType, set[str]] = {
+CONDITIONAL_SETS: dict[str, set[str]] = {
     "claude-skill": {"SKILL", "CLAUDE_SKILL"},
     "codex-skill": {"SKILL", "CODEX_SKILL"},
     "claude-command": {"CLAUDE_COMMAND"},
+    "portable-skill": {"SKILL", "PORTABLE_SKILL"},
 }
 
 CONDITIONAL_RE = re.compile(
@@ -192,7 +205,7 @@ CONDITIONAL_OPEN_RE = re.compile(r"\{\{#[A-Z_]+\}\}")
 CONDITIONAL_CLOSE_RE = re.compile(r"\{\{/[A-Z_]+\}\}")
 
 
-def apply_conditionals(text: str, target: TargetType) -> str:
+def apply_conditionals(text: str, target: TargetType | Literal["portable-skill"]) -> str:
     """Expand {{#KEY}}...{{/KEY}} blocks, keeping only those matching target.
 
     Conditional blocks cannot nest. The non-greedy regex with a backreferenced
@@ -335,14 +348,82 @@ def render_target(source: Source, target_type: TargetType) -> tuple[Path, str]:
     return output_path, content
 
 
+def render_portable_body(source: Source) -> str:
+    """Render a task reference without requiring a plugin or sibling skill."""
+    body = apply_substitutions(apply_conditionals(source.body, "portable-skill"), "portable")
+    body = body.replace("This skill assumes the ArchAstro CLI is already installed and authenticated. ", "")
+    body = body.replace("`plugin-compatibility.json` from the plugin root", "[plugin-compatibility.json](plugin-compatibility.json) beside this reference")
+    # Bootstrap content is shared with plugins, but portable installs must execute
+    # the recovery themselves rather than send the user to another command.
+    body = body.replace("instruct the user to install or upgrade `archastro`", "execute [installation](install.md), then resume authentication")
+    body = body.replace("ArchAstro/archastro-cli/", "ArchAstro/archastro/")
+    body = body.replace("| bash", "| env ARCHASTRO_INSTALL_SKIP_PATH_UPDATE=true ARCHASTRO_INSTALL_SKIP_COMPLETIONS=true bash")
+    body = body.replace(
+        "irm https://raw.githubusercontent.com/ArchAstro/archastro/main/install.ps1 | iex",
+        "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/ArchAstro/archastro/main/install.ps1))) -SkipPathUpdate",
+    )
+    for path in SOURCES_DIR.glob("*.md"):
+        body = body.replace(f"`{path.stem}` skill", f"[{path.stem} guide]({path.stem}.md)")
+    return body.lstrip("\n")
+
+
+def render_portable_skills(sources: list[Source]) -> dict[Path, str]:
+    """Each npx-installable directory carries its own runtime dependencies."""
+    install = next(source for source in sources if source.path.stem == "install")
+    bootstrap = (SOURCES_DIR / "references" / "bootstrap.md").read_text(encoding="utf-8")
+    compatibility = (REPO_ROOT / "plugin-compatibility.json").read_text(encoding="utf-8")
+    outputs: dict[Path, str] = {}
+    for source in sources:
+        if not source.skill_frontmatter:
+            continue
+        name = "archastro-" + source.skill_frontmatter["name"]
+        directory = REPO_ROOT / "skills" / name
+        fm = {
+            "name": name,
+            "description": apply_substitutions(source.skill_frontmatter["description"], "portable"),
+        }
+        task = render_portable_body(source)
+        title = next(line for line in task.splitlines() if line.startswith("# "))
+        body = (
+            title + "\n\n"
+            "1. Read and execute [bootstrap](references/bootstrap.md) before running task commands. "
+            "If the CLI is missing or too old, install or upgrade it yourself and resume the requested task.\n"
+            "2. Read the [task guide](references/task.md) and complete the user's request. "
+            "An explicit upgrade request runs the upgrade steps even when a supported version is present; an install request keeps an already supported version.\n\n"
+            "All required setup instructions are bundled here. Do not require another skill, "
+            "a plugin slash command, or files from the source repository. "
+            "Paths in linked references are relative to the reference file. "
+            "Installing this skill with npx copies instructions; the agent executes CLI installation when using the skill.\n"
+        )
+        outputs[directory / "SKILL.md"] = format_frontmatter(fm) + "\n" + body
+        outputs[directory / "references" / "task.md"] = task
+        # Follow task-guide links transitively so --skill <one-name> works alone.
+        guides = {item.path.stem: item for item in sources}
+        pending = re.findall(r"\]\(([^/)]+)\.md\)", task)
+        included = {"bootstrap", "install"}
+        while pending:
+            dependency = pending.pop()
+            if dependency in included or dependency not in guides:
+                continue
+            included.add(dependency)
+            reference = render_portable_body(guides[dependency])
+            outputs[directory / "references" / f"{dependency}.md"] = reference
+            pending.extend(re.findall(r"\]\(([^/)]+)\.md\)", reference))
+        outputs[directory / "references" / "bootstrap.md"] = bootstrap
+        outputs[directory / "references" / "install.md"] = render_portable_body(install)
+        outputs[directory / "references" / "plugin-compatibility.json"] = compatibility
+    return outputs
+
+
 def render_all() -> dict[Path, str]:
     """Render every source to every declared target. Return {path: content}."""
     if not SOURCES_DIR.exists():
         raise FileNotFoundError(f"sources dir not found: {SOURCES_DIR}")
 
-    outputs: dict[Path, str] = {}
-    for source_path in sorted(SOURCES_DIR.glob("*.md")):
-        source = load_source(source_path)
+    sources = [load_source(path) for path in sorted(SOURCES_DIR.glob("*.md"))]
+    outputs = render_portable_skills(sources)
+    for source in sources:
+        source_path = source.path
         for target_type in source.targets:
             output_path, content = render_target(source, target_type)  # type: ignore[arg-type]
             if output_path in outputs:

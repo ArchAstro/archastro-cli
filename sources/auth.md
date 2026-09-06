@@ -32,13 +32,17 @@ Authenticate the user with the ArchAstro developer platform via browser-based lo
    ```
    archastro auth status
    ```
-   If the user is already authenticated, show their status and ask whether they want to re-authenticate.
+{{#CLAUDE_COMMAND}}   If the user is already authenticated, show their status and ask whether they want to re-authenticate.{{/CLAUDE_COMMAND}}{{#CODEX_SKILL}}   If the user is already authenticated, show their status and ask whether they want to re-authenticate.{{/CODEX_SKILL}}{{#PORTABLE_SKILL}}   If already authenticated, show the status and finish unless the user explicitly requested re-authentication. Otherwise continue to login; do not ask to repeat a successful login.{{/PORTABLE_SKILL}}
 
-4. **Reset any stale settings overrides that may point to localhost**:
+{{#CLAUDE_COMMAND}}4. **Reset any stale settings overrides that may point to localhost**:
    ```
    archastro settings reset
    ```
-   This ensures the CLI uses the production URLs.
+   This ensures the CLI uses the production URLs.{{/CLAUDE_COMMAND}}{{#CODEX_SKILL}}4. **Reset any stale settings overrides that may point to localhost**:
+   ```
+   archastro settings reset
+   ```
+   This ensures the CLI uses the production URLs.{{/CODEX_SKILL}}{{#PORTABLE_SKILL}}4. **Preserve the user's configured server**. Reset settings only when the user asks to change them; localhost may be intentional.{{/PORTABLE_SKILL}}
 
 5. **Start the login flow**:
    ```
