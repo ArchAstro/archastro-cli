@@ -17,7 +17,7 @@ brew install ArchAstro/tools/archastro
 Fallback to the installer script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro/main/install.sh | bash
 ```
 
 ### Linux
@@ -25,7 +25,7 @@ curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/instal
 Use the installer script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro/main/install.sh | bash
 ```
 
 ### Windows
@@ -33,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/instal
 Use the PowerShell installer:
 
 ```powershell
-irm https://raw.githubusercontent.com/ArchAstro/archastro-cli/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/ArchAstro/archastro/main/install.ps1 | iex
 ```
 
 ## Agent skills (npx skills)
@@ -73,7 +73,7 @@ python3 scripts/test_portable_skills.py
 Add the marketplace and install the `archastro` plugin:
 
 ```text
-/plugin marketplace add archastro/archastro-cli
+/plugin marketplace add archastro/archastro
 /plugin install archastro@archastro
 ```
 

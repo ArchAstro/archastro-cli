@@ -27,7 +27,7 @@ function Resolve-BoolEnv {
 }
 
 $Owner = "ArchAstro"
-$Repo = "archastro-cli"
+$Repo = "archastro"
 $BinaryName = "archastro.exe"
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
